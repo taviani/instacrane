@@ -1,0 +1,40 @@
+name: Deploy Frontend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "frontend/**"
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Build
+        working-directory: frontend
+        env:
+          PUBLIC_API_URL: ${{ secrets.API_URL }}
+        run: npm run build
+
+      - name: Deploy to Scaleway Object Storage
+        uses: scaleway/action-s3@v3
+        with:
+          args: --acl public-read --follow-symlinks --delete
+        env:
+          SCW_ACCESS_KEY: ${{ secrets.SCW_ACCESS_KEY }}
+          SCW_SECRET_KEY: ${{ secrets.SCW_SECRET_KEY }}
+          SCW_S3_BUCKET: instacrane-frontend
+          SCW_REGION: fr-par
+          SOURCE_DIR: frontend/build

@@ -1,0 +1,39 @@
+name: Deploy Backend
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+
+env:
+  SCW_REGISTRY: ${{ secrets.SCW_REGISTRY_ENDPOINT }}
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login to Scaleway Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.SCW_REGISTRY }}
+          username: nologin
+          password: ${{ secrets.SCW_SECRET_KEY }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          push: true
+          tags: ${{ env.SCW_REGISTRY }}/instacrane-api:latest,${{ env.SCW_REGISTRY }}/instacrane-api:${{ github.sha }}
+
+      - name: Deploy container
+        run: |
+          curl -s -X POST \
+            -H "X-Auth-Token: ${{ secrets.SCW_SECRET_KEY }}" \
+            "https://api.scaleway.com/containers/v1beta1/regions/fr-par/containers/${{ secrets.SCW_CONTAINER_ID }}/deploy" \
+            -d '{}'
