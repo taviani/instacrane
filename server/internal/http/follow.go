@@ -25,7 +25,13 @@ func (deps Deps) requestFollow(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "demande refusée")
 		return
 	}
-	tag, err := deps.Pool.Exec(r.Context(), `
+	tx, err := deps.Pool.Begin(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "profil indisponible")
+		return
+	}
+	defer tx.Rollback(r.Context())
+	tag, err := tx.Exec(r.Context(), `
 		INSERT INTO follows (follower_sub, following_sub, status)
 		VALUES ($1, $2, 'pending')
 		ON CONFLICT DO NOTHING
@@ -35,7 +41,7 @@ func (deps Deps) requestFollow(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var status string
-	if err := deps.Pool.QueryRow(r.Context(), `
+	if err := tx.QueryRow(r.Context(), `
 		SELECT status FROM follows WHERE follower_sub = $1 AND following_sub = $2
 	`, actor, target).Scan(&status); err != nil {
 		writeError(w, http.StatusInternalServerError, "profil indisponible")
@@ -44,6 +50,22 @@ func (deps Deps) requestFollow(w http.ResponseWriter, r *http.Request) {
 	if status == "accepted" {
 		writeError(w, http.StatusConflict, "déjà suivi")
 		return
+	}
+	if tag.RowsAffected() == 1 {
+		if _, err := tx.Exec(r.Context(), `
+			INSERT INTO notifications (recipient_sub, actor_sub, type)
+			VALUES ($1, $2, 'follow')
+		`, target, actor); err != nil {
+			writeError(w, http.StatusInternalServerError, "profil indisponible")
+			return
+		}
+	}
+	if err := tx.Commit(r.Context()); err != nil {
+		writeError(w, http.StatusInternalServerError, "profil indisponible")
+		return
+	}
+	if tag.RowsAffected() == 1 {
+		deps.alert(r.Context(), target, actor, "follow")
 	}
 	code := http.StatusOK
 	if tag.RowsAffected() == 1 {
