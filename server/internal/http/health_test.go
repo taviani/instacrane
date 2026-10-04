@@ -38,7 +38,7 @@ func TestMeWithoutSessionIsRefused(t *testing.T) {
 }
 
 func TestUnknownRoute(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/api/posts", nil)
+	req := httptest.NewRequest(http.MethodGet, "/api/nowhere", nil)
 	rec := httptest.NewRecorder()
 	New(Deps{}).ServeHTTP(rec, req)
 	if rec.Code != http.StatusNotFound {

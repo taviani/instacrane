@@ -35,7 +35,7 @@ func TestProfilesAndFollows(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	handler := New(Deps{Pool: pool, Sessions: verifier})
+	handler := New(Deps{Pool: pool, Sessions: verifier, Objects: testStore(t)})
 	token := func(sub string) string {
 		return iss.Token(t, sub, sub+"@example.test", time.Now().Add(time.Hour))
 	}
@@ -143,7 +143,11 @@ func TestProfilesAndFollows(t *testing.T) {
 	if len(got) != 1 || got[0]["id"] != "10000000-0000-4000-8000-000000000001" || got[0]["photo_count"] != float64(2) {
 		t.Fatalf("page: %#v", got)
 	}
-	if got[0]["thumbnail_key"] != "thumbs/10000000-0000-4000-8000-000000000001.jpg" {
+	if _, ok := got[0]["thumbnail_key"]; ok {
+		t.Fatal("la clé de miniature ne doit pas sortir")
+	}
+	thumb, _ := got[0]["thumbnail_url"].(string)
+	if thumb == "" {
 		t.Fatalf("miniature: %#v", got[0])
 	}
 	older := call(t, handler, http.MethodGet, "/api/users/paul/posts?limit=1&before="+url.QueryEscape(got[0]["created_at"].(string)+"|10000000-0000-4000-8000-000000000001"), token("virginie"), "")

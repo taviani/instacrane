@@ -17,6 +17,14 @@ var errPhoto = errors.New("fichier photo refusé")
 const AvatarEdge = 512
 
 func AvatarJPEG(raw []byte) ([]byte, error) {
+	src, err := decodePhoto(raw)
+	if err != nil {
+		return nil, errPhoto
+	}
+	return encodeJPEG(fitLongEdge(src, AvatarEdge))
+}
+
+func decodePhoto(raw []byte) (image.Image, error) {
 	cfg, format, err := image.DecodeConfig(bytes.NewReader(raw))
 	if err != nil || (format != "jpeg" && format != "png" && format != "webp") {
 		return nil, errPhoto
@@ -28,9 +36,12 @@ func AvatarJPEG(raw []byte) ([]byte, error) {
 	if err != nil {
 		return nil, errPhoto
 	}
-	fitted := fitLongEdge(src, AvatarEdge)
+	return src, nil
+}
+
+func encodeJPEG(src image.Image) ([]byte, error) {
 	var buf bytes.Buffer
-	if err := jpeg.Encode(&buf, fitted, &jpeg.Options{Quality: 85}); err != nil {
+	if err := jpeg.Encode(&buf, src, &jpeg.Options{Quality: 85}); err != nil {
 		return nil, err
 	}
 	return buf.Bytes(), nil

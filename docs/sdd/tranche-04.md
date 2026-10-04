@@ -5,7 +5,7 @@ Plan d’implémentation. Le produit reste celui de `spec.md`. On ne code pas la
 ## Fait quand
 
 - `POST /api/posts` publie une à vingt photos, dans l’ordre envoyé, avec une légende facultative. Sans nom d’utilisateur, c’est refusé.
-- Chaque photo est stockée deux fois : affichage, grand côté 1440 pixels, et miniature, grand côté 480. Pas d’agrandissement. L’original est oublié. Le fichier enregistré n’a pas de métadonnées, donc pas de position.
+- Chaque photo est stockée deux fois. L’affichage est un portrait 4:5, grand côté au plus 1440 pixels. La miniature est le carré central, 480 pixels de côté au plus. Pas d’agrandissement. L’original est oublié. Le fichier enregistré n’a pas de métadonnées, donc pas de position.
 - La localisation est facultative. Absente, rien n’est gardé. Présente, une seule position est enregistrée sur la publication, jamais sur le profil. Elle part avec la publication.
 - Le fil est une seule suite chronologique. L’ordre est l’heure d’enregistrement de la publication, la plus récente d’abord, que l’auteur soit soi ou un compte dont la demande a été acceptée. La page suivante charge les plus anciennes. Une demande acceptée ouvre tout l’historique : la grille du profil et le fil. Une demande en attente n’y met rien. Le sens inverse reste fermé.
 - Le détail montre les photos d’affichage, dans l’ordre, la légende, la position s’il y en a une, et les nombres de likes et de commentaires. On n’y arrive que si on peut voir la publication.
@@ -31,7 +31,7 @@ Au départ, avant toute demande, le fil ne contient que ses propres publications
 
 Le bouton de localisation est l’affaire de l’app. L’API ne lit pas la position dans le fichier. Elle reçoit, ou non, une paire de coordonnées choisie par l’auteur. S’il n’en envoie pas, la publication n’en a pas. S’il en envoie, c’est cette position qui est montrée à ceux qui peuvent voir la publication. Il n’y a pas de deuxième position, ni de trace de la source. Rien n’est copié sur le profil.
 
-L’auteur peut recadrer chaque photo dans l’app, avant l’envoi. Ce geste est le client, pas cette tranche : l’API ne reçoit que l’image déjà cadrée. Elle ne propose pas de recadrage. L’app réduit aussi la photo et la dépouille avant l’envoi. Si le fichier reçu est plus grand, l’API le réduit à 1440 et oublie l’original. Elle réencode aussi quand le fichier est déjà à la bonne taille, pour qu’aucune métadonnée ne reste. Une position qui serait encore dans le fichier est donc perdue. Seule la paire envoyée à part est gardée.
+L’auteur cadre chaque photo en portrait 4:5 dans l’app, avant l’envoi. Ce geste est le client. L’API ne propose pas de cadrage, mais elle ramène quand même le fichier reçu à ce portrait, au centre, si la proportion est autre. Toutes les photos du fil ont donc la même proportion. La grille reçoit le carré central. L’app réduit aussi la photo et la dépouille avant l’envoi. Si le portrait dépasse 1440 pixels de haut, l’API le réduit et oublie l’original. Elle réencode aussi quand le fichier est déjà à la bonne taille, pour qu’aucune métadonnée ne reste. Une position qui serait encore dans le fichier est donc perdue. Seule la paire envoyée à part est gardée.
 
 Supprimer la publication efface les deux fichiers de chaque photo. Supprimer le compte efface d’abord ces fichiers et l’avatar, puis la ligne du profil. Si le stockage ne retire pas les fichiers, le profil reste, pour qu’un nouvel appel puisse finir. La confirmation est demandée par l’app, plus tard : ici, l’appel authentifié suffit.
 
@@ -56,7 +56,7 @@ Le stockage d’objets est déjà celui de la tranche 3. Les tests et la CI lanc
 
 JPEG, PNG ou WebP en entrée. Le reste est refusé. Une image de plus de 8000 pixels de côté est refusée. Chaque fichier est limité, et il en faut entre un et vingt.
 
-Ce qui est stocké est du JPEG, sans métadonnées. Affichage : grand côté au plus 1440. Miniature : grand côté au plus 480. Les clés sont tirées au hasard, sous un préfixe fixe. L’API ne supprime que des clés de ce préfixe, ou du préfixe des avatars.
+Ce qui est stocké est du JPEG, sans métadonnées. Affichage : portrait 4:5, grand côté au plus 1440. Miniature : carré, côté au plus 480, pris au centre du portrait. Les clés sont tirées au hasard, sous un préfixe fixe. L’API ne supprime que des clés de ce préfixe, ou du préfixe des avatars.
 
 Le lien signé dure quelques minutes, comme l’avatar. Le fil et le détail signent les photos d’affichage. La grille signe la miniature de la première. `GET /api/users/{username}/posts` ne renvoie plus la clé d’objet.
 
