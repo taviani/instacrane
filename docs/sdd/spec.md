@@ -139,6 +139,12 @@ La tranche stores produit des builds iOS et Android, et l’export web. La soumi
 
 Chaque tranche a des tests automatisés sur le comportement qu’elle ajoute. La tranche client se vérifie sur le web Expo et sur un simulateur ou un appareil. Les tests d’API utilisent un issuer de test. La connexion réelle dépend de la configuration locale. Les images de test passent par MinIO. Le bucket Scaleway se vérifie par `terraform validate`, puis par un apply manuel une fois le compte créé.
 
+Renovate surveille les bibliothèques.
+
+- Une zéro-day est mise à jour le jour où le correctif existe. Le délai de 30 jours ne s’applique pas.
+- Un correctif ou une version mineure, sans faille, est fusionné par GitHub dès que la CI passe.
+- Une version majeure, et une faille qui n’est pas une zéro-day, sont adoptées 30 jours après la publication de la version. On ne prend pas une bibliothèque avant ce délai.
+
 ## Découpage
 
 Une tranche à la fois. On ne commence la suivante que lorsque la précédente est vérifiée.
