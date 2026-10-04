@@ -78,6 +78,7 @@ Tout appel sauf `GET /api/health` exige une session valide.
 - `POST` et `DELETE /api/posts/{id}/like`
 - `GET` et `POST /api/posts/{id}/comments`, `DELETE /api/posts/{id}/comments/{comment_id}`
 - `GET /api/notifications`, `POST /api/notifications/read`
+- `PUT /api/users/me/alert-token`, `DELETE /api/users/me/alert-token`
 - `POST /api/users/{username}/block`, `DELETE /api/users/{username}/block`
 - `POST /api/users/{username}/report`, `POST /api/posts/{id}/report`
 
