@@ -4,7 +4,7 @@ Plan d’implémentation. Le produit reste celui de `spec.md`. On ne code pas la
 
 ## Fait quand
 
-- Depuis un profil, on signale le compte ou on le bloque. Depuis une publication qu’on peut voir, on la signale. Un signalement garde qui signale, la cible, et le moment. Pas de motif, pas d’email, pas de légende, pas de texte de commentaire.
+- Depuis un profil, on signale le compte ou on le bloque. Depuis une publication qu’on peut voir, on la signale. Le signalement d’un compte contient la personne qui signale, la personne signalée, et le moment. Le signalement d’une publication contient la personne qui signale, la publication, et le moment. Pas de motif, pas d’email, pas de légende, pas de texte de commentaire.
 - Le signaler une nouvelle fois crée une autre ligne, avec son propre moment. Personne n’est prévenu. Rien n’est envoyé à l’issuer.
 - Bloquer retire le suivi de la personne bloquée vers celui qui bloque, en attente ou déjà accepté. Elle ne peut plus redemander. Le suivi inverse reste.
 - Elle ne voit plus ses photos : grille vide, fil sans elles, détail introuvable, like et commentaire introuvables. Lui continue de voir les siennes s’il les voyait déjà, et il peut encore aimer ou commenter.
@@ -25,7 +25,7 @@ Le suivi de Virginie vers Paul disparaît. Elle ne voit plus ses photos. Une nou
 
 La fiche de Paul reste ouverte pour Virginie : son nom, son avatar, sa bio. Rien n’y dit qu’elle est bloquée. Paul, sur la fiche de Virginie, voit que le blocage est le sien. Il la débloque. Elle peut redemander. Tant qu’il n’a pas accepté, les photos ne reviennent pas.
 
-Virginie signale le compte de Paul. La ligne garde Virginie, Paul, et le moment. Elle le signale encore : une seconde ligne, un autre moment. Elle signale une publication qu’elle peut voir : la ligne garde la publication, pas Paul en plus. Rien de tout cela ne crée une notification, ni une alerte.
+Virginie signale le compte de Paul. La ligne contient Virginie, Paul, et le moment. Elle le signale encore : une seconde ligne, un autre moment. Elle signale une publication qu’elle peut voir : la ligne contient cette publication, pas Paul en plus. Rien de tout cela ne crée une notification, ni une alerte.
 
 ## Ce qui reste
 

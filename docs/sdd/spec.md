@@ -114,7 +114,7 @@ Une notification référence le destinataire, l’auteur de l’action, le type 
 
 ## Signalement et blocage
 
-Exigé pour publier sur les stores. Depuis un profil, on signale le compte ou on le bloque. Depuis une publication, on la signale. Un signalement garde qui signale, la cible, et le moment. Rien d’autre : pas de motif, pas de notification. Le signaler une nouvelle fois garde un autre moment.
+Exigé pour publier sur les stores. Depuis un profil, on signale le compte ou on le bloque. Depuis une publication, on la signale. Le signalement d’un compte contient la personne qui signale, la personne signalée, et le moment. Le signalement d’une publication contient la personne qui signale, la publication, et le moment. Rien d’autre : pas de motif, pas de notification. Une nouvelle fois enregistre un autre moment.
 
 Bloquer retire le suivi qui donnait à la personne bloquée l’accès aux photos de celui qui bloque, qu’il soit en attente ou déjà accepté, et lui interdit d’en redemander. Le suivi inverse reste : celui qui bloque continue de voir les photos de l’autre s’il les voyait déjà, et il peut encore aimer ou commenter. Les likes, commentaires et notifications déjà écrits restent. Débloquer retire l’interdiction de redemander, pas l’ancien suivi. La fiche reste visible. Elle dit le blocage à celui qui l’a posé, et elle ne le dit pas à l’autre. Supprimer un compte retire ses blocages. Un signalement qui le concerne part avec lui.
 
