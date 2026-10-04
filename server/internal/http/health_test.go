@@ -14,7 +14,7 @@ func TestHealthWithoutSession(t *testing.T) {
 			req.Header.Set("Authorization", header)
 		}
 		rec := httptest.NewRecorder()
-		New().ServeHTTP(rec, req)
+		New(Deps{}).ServeHTTP(rec, req)
 		if rec.Code != http.StatusOK {
 			t.Fatalf("statut = %d", rec.Code)
 		}
@@ -28,10 +28,19 @@ func TestHealthWithoutSession(t *testing.T) {
 	}
 }
 
-func TestOnlyHealthRoute(t *testing.T) {
+func TestMeWithoutSessionIsRefused(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/api/users/me", nil)
 	rec := httptest.NewRecorder()
-	New().ServeHTTP(rec, req)
+	New(Deps{}).ServeHTTP(rec, req)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("statut = %d", rec.Code)
+	}
+}
+
+func TestUnknownRoute(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/api/posts", nil)
+	rec := httptest.NewRecorder()
+	New(Deps{}).ServeHTTP(rec, req)
 	if rec.Code != http.StatusNotFound {
 		t.Fatalf("statut = %d", rec.Code)
 	}

@@ -5,6 +5,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/taviani/instacrane/server/internal/auth"
 	"github.com/taviani/instacrane/server/internal/config"
 	"github.com/taviani/instacrane/server/internal/db"
 	api "github.com/taviani/instacrane/server/internal/http"
@@ -24,9 +25,16 @@ func main() {
 	if err := db.Migrate(ctx, pool); err != nil {
 		log.Fatal(err)
 	}
+	sessions, err := auth.NewVerifier(ctx, cfg.IssuerURL)
+	if err != nil {
+		log.Fatal(err)
+	}
 	server := &http.Server{
-		Addr:    cfg.Addr,
-		Handler: api.New(),
+		Addr: cfg.Addr,
+		Handler: api.New(api.Deps{
+			Pool:     pool,
+			Sessions: sessions,
+		}),
 	}
 	log.Fatal(server.ListenAndServe())
 }
