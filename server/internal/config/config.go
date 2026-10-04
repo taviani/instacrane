@@ -7,9 +7,17 @@ import (
 	"strings"
 )
 
+type Storage struct {
+	Endpoint  string
+	Bucket    string
+	AccessKey string
+	SecretKey string
+}
+
 type Config struct {
 	DatabaseURL string
 	IssuerURL   string
+	Storage     Storage
 	Addr        string
 }
 
@@ -26,7 +34,31 @@ func Load() (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
-	return Config{DatabaseURL: raw, IssuerURL: issuer, Addr: ":8000"}, nil
+	storage, err := storageConfig()
+	if err != nil {
+		return Config{}, err
+	}
+	return Config{DatabaseURL: raw, IssuerURL: issuer, Storage: storage, Addr: ":8000"}, nil
+}
+
+func storageConfig() (Storage, error) {
+	endpoint := strings.TrimSpace(os.Getenv("STORAGE_ENDPOINT"))
+	bucket := strings.TrimSpace(os.Getenv("STORAGE_BUCKET"))
+	accessKey := strings.TrimSpace(os.Getenv("STORAGE_ACCESS_KEY"))
+	secretKey := strings.TrimSpace(os.Getenv("STORAGE_SECRET_KEY"))
+	if endpoint == "" || bucket == "" || accessKey == "" || secretKey == "" {
+		return Storage{}, errors.New("stockage incomplet")
+	}
+	parsed, err := url.Parse(endpoint)
+	if err != nil || (parsed.Scheme != "https" && parsed.Scheme != "http") || parsed.Host == "" {
+		return Storage{}, errors.New("STORAGE_ENDPOINT doit être une URL http ou https")
+	}
+	return Storage{
+		Endpoint:  endpoint,
+		Bucket:    bucket,
+		AccessKey: accessKey,
+		SecretKey: secretKey,
+	}, nil
 }
 
 func issuerURL() (string, error) {

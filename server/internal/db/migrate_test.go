@@ -22,7 +22,7 @@ func TestMigrateCreatesSpecSchema(t *testing.T) {
 	if err := pool.QueryRow(ctx, `SELECT count(*) FROM schema_migrations`).Scan(&versions); err != nil {
 		t.Fatal(err)
 	}
-	if versions != 1 {
+	if versions != 2 {
 		t.Fatalf("migrations appliquées = %d", versions)
 	}
 
@@ -71,7 +71,7 @@ func TestMigrateCreatesSpecSchema(t *testing.T) {
 	assertColumns(t, ctx, pool, "users", []string{
 		"sub", "email", "username", "display_name", "bio", "avatar_key", "created_at",
 	})
-	assertColumns(t, ctx, pool, "follows", []string{"follower_sub", "following_sub"})
+	assertColumns(t, ctx, pool, "follows", []string{"follower_sub", "following_sub", "status"})
 	assertColumns(t, ctx, pool, "posts", []string{"id", "author_sub", "caption", "created_at"})
 	assertColumns(t, ctx, pool, "post_photos", []string{"post_id", "position", "display_key", "thumbnail_key"})
 	assertColumns(t, ctx, pool, "comments", []string{"id", "author_sub", "post_id", "body", "created_at"})
@@ -97,11 +97,17 @@ func TestMigrateCreatesSpecSchema(t *testing.T) {
 	if _, err := pool.Exec(ctx, `INSERT INTO users (sub, username) VALUES ('e', 'ab')`); err == nil {
 		t.Fatal("un nom trop court doit être refusé")
 	}
+	if _, err := pool.Exec(ctx, `INSERT INTO users (sub, username) VALUES ('f', 'me')`); err == nil {
+		t.Fatal("un nom réservé doit être refusé")
+	}
 	if _, err := pool.Exec(ctx, `INSERT INTO follows (follower_sub, following_sub) VALUES ('a', 'b')`); err != nil {
 		t.Fatal(err)
 	}
 	if _, err := pool.Exec(ctx, `INSERT INTO follows (follower_sub, following_sub) VALUES ('a', 'b')`); err == nil {
 		t.Fatal("un suivi dupliqué doit être refusé")
+	}
+	if _, err := pool.Exec(ctx, `INSERT INTO follows (follower_sub, following_sub, status) VALUES ('b', 'a', 'nope')`); err == nil {
+		t.Fatal("un état de suivi inconnu doit être refusé")
 	}
 	if _, err := pool.Exec(ctx, `
 		INSERT INTO posts (author_sub, caption) VALUES ('a', 'bonjour')

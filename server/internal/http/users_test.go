@@ -72,7 +72,7 @@ func TestUsersMe(t *testing.T) {
 	if bad.Code != http.StatusBadRequest {
 		t.Fatalf("nom court: %d", bad.Code)
 	}
-	extra := call(t, handler, http.MethodPatch, "/api/users/me", token("ada-sub", ""), `{"username":"ada","bio":"x"}`)
+	extra := call(t, handler, http.MethodPatch, "/api/users/me", token("ada-sub", ""), `{"username":"ada","email":"x"}`)
 	if extra.Code != http.StatusBadRequest {
 		t.Fatalf("champ refusé: %d", extra.Code)
 	}

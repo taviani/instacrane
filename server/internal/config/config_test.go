@@ -24,9 +24,25 @@ func TestLoadRequiresIssuerURL(t *testing.T) {
 	}
 }
 
+func TestLoadRequiresStorage(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://localhost/instacrane")
+	t.Setenv("ISSUER_URL", "http://127.0.0.1:9")
+	t.Setenv("STORAGE_ENDPOINT", "")
+	t.Setenv("STORAGE_BUCKET", "")
+	t.Setenv("STORAGE_ACCESS_KEY", "")
+	t.Setenv("STORAGE_SECRET_KEY", "")
+	if _, err := Load(); err == nil {
+		t.Fatal("un stockage absent doit être refusé")
+	}
+}
+
 func TestLoadAcceptsPostgresURL(t *testing.T) {
 	t.Setenv("DATABASE_URL", "postgres://localhost/instacrane")
 	t.Setenv("ISSUER_URL", "http://127.0.0.1:9")
+	t.Setenv("STORAGE_ENDPOINT", "http://127.0.0.1:9000")
+	t.Setenv("STORAGE_BUCKET", "media")
+	t.Setenv("STORAGE_ACCESS_KEY", "access")
+	t.Setenv("STORAGE_SECRET_KEY", "secret")
 	cfg, err := Load()
 	if err != nil {
 		t.Fatal(err)
