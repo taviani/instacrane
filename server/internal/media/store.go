@@ -53,25 +53,59 @@ func (s *Store) EnsureBucket(ctx context.Context) error {
 }
 
 func (s *Store) PutAvatar(ctx context.Context, body []byte) (string, error) {
-	buf := make([]byte, 16)
-	if _, err := rand.Read(buf); err != nil {
+	key, err := randomKey("avatars/")
+	if err != nil {
 		return "", err
 	}
-	key := "avatars/" + hex.EncodeToString(buf) + ".jpg"
+	if err := s.putJPEG(ctx, key, body); err != nil {
+		return "", fmt.Errorf("envoi avatar: %w", err)
+	}
+	return key, nil
+}
+
+func (s *Store) PutPhoto(ctx context.Context, display, thumb []byte) (string, string, error) {
+	displayKey, err := randomKey("photos/")
+	if err != nil {
+		return "", "", err
+	}
+	thumbKey, err := randomKey("thumbs/")
+	if err != nil {
+		return "", "", err
+	}
+	if err := s.putJPEG(ctx, displayKey, display); err != nil {
+		return "", "", fmt.Errorf("envoi photo: %w", err)
+	}
+	if err := s.putJPEG(ctx, thumbKey, thumb); err != nil {
+		_ = s.Delete(ctx, displayKey)
+		return "", "", fmt.Errorf("envoi miniature: %w", err)
+	}
+	return displayKey, thumbKey, nil
+}
+
+func (s *Store) putJPEG(ctx context.Context, key string, body []byte) error {
 	_, err := s.client.PutObject(ctx, &s3.PutObjectInput{
 		Bucket:      aws.String(s.bucket),
 		Key:         aws.String(key),
 		Body:        bytes.NewReader(body),
 		ContentType: aws.String("image/jpeg"),
 	})
-	if err != nil {
-		return "", fmt.Errorf("envoi avatar: %w", err)
+	return err
+}
+
+func randomKey(prefix string) (string, error) {
+	buf := make([]byte, 16)
+	if _, err := rand.Read(buf); err != nil {
+		return "", err
 	}
-	return key, nil
+	return prefix + hex.EncodeToString(buf) + ".jpg", nil
+}
+
+func ownedKey(key string) bool {
+	return strings.HasPrefix(key, "avatars/") || strings.HasPrefix(key, "photos/") || strings.HasPrefix(key, "thumbs/")
 }
 
 func (s *Store) Delete(ctx context.Context, key string) error {
-	if !strings.HasPrefix(key, "avatars/") {
+	if !ownedKey(key) {
 		return nil
 	}
 	_, err := s.client.DeleteObject(ctx, &s3.DeleteObjectInput{
@@ -79,7 +113,7 @@ func (s *Store) Delete(ctx context.Context, key string) error {
 		Key:    aws.String(key),
 	})
 	if err != nil {
-		return fmt.Errorf("retrait avatar: %w", err)
+		return fmt.Errorf("retrait objet: %w", err)
 	}
 	return nil
 }

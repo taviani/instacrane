@@ -19,6 +19,7 @@ import (
 
 type Objects interface {
 	PutAvatar(ctx context.Context, body []byte) (string, error)
+	PutPhoto(ctx context.Context, display, thumb []byte) (string, string, error)
 	Delete(ctx context.Context, key string) error
 	Sign(ctx context.Context, key string) (string, error)
 }
@@ -86,7 +87,17 @@ func New(deps Deps) http.Handler {
 		writeJSON(w, http.StatusOK, view)
 	})
 	mux.HandleFunc("PATCH /api/users/me", deps.patchMe)
+	mux.HandleFunc("DELETE /api/users/me", deps.deleteMe)
 	mux.HandleFunc("POST /api/users/me/avatar", deps.postAvatar)
+	mux.HandleFunc("POST /api/posts", deps.createPost)
+	mux.HandleFunc("GET /api/posts/feed", deps.feed)
+	mux.HandleFunc("GET /api/posts/{id}", deps.postDetail)
+	mux.HandleFunc("DELETE /api/posts/{id}", deps.deletePost)
+	mux.HandleFunc("POST /api/posts/{id}/like", deps.likePost)
+	mux.HandleFunc("DELETE /api/posts/{id}/like", deps.unlikePost)
+	mux.HandleFunc("GET /api/posts/{id}/comments", deps.listComments)
+	mux.HandleFunc("POST /api/posts/{id}/comments", deps.createComment)
+	mux.HandleFunc("DELETE /api/posts/{id}/comments/{comment_id}", deps.deleteComment)
 	mux.HandleFunc("GET /api/users/me/follow-requests", deps.followRequests)
 	mux.HandleFunc("GET /api/users/{username}", deps.publicProfile)
 	mux.HandleFunc("GET /api/users/{username}/{kind}", deps.userCollection)

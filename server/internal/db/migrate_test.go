@@ -22,7 +22,7 @@ func TestMigrateCreatesSpecSchema(t *testing.T) {
 	if err := pool.QueryRow(ctx, `SELECT count(*) FROM schema_migrations`).Scan(&versions); err != nil {
 		t.Fatal(err)
 	}
-	if versions != 2 {
+	if versions != 3 {
 		t.Fatalf("migrations appliquées = %d", versions)
 	}
 
@@ -72,7 +72,7 @@ func TestMigrateCreatesSpecSchema(t *testing.T) {
 		"sub", "email", "username", "display_name", "bio", "avatar_key", "created_at",
 	})
 	assertColumns(t, ctx, pool, "follows", []string{"follower_sub", "following_sub", "status"})
-	assertColumns(t, ctx, pool, "posts", []string{"id", "author_sub", "caption", "created_at"})
+	assertColumns(t, ctx, pool, "posts", []string{"id", "author_sub", "caption", "created_at", "latitude", "longitude"})
 	assertColumns(t, ctx, pool, "post_photos", []string{"post_id", "position", "display_key", "thumbnail_key"})
 	assertColumns(t, ctx, pool, "comments", []string{"id", "author_sub", "post_id", "body", "created_at"})
 	assertColumns(t, ctx, pool, "likes", []string{"user_sub", "post_id"})
@@ -113,6 +113,12 @@ func TestMigrateCreatesSpecSchema(t *testing.T) {
 		INSERT INTO posts (author_sub, caption) VALUES ('a', 'bonjour')
 	`); err != nil {
 		t.Fatal(err)
+	}
+	if _, err := pool.Exec(ctx, `UPDATE posts SET latitude = 10 WHERE author_sub = 'a'`); err == nil {
+		t.Fatal("une seule coordonnée doit être refusée")
+	}
+	if _, err := pool.Exec(ctx, `UPDATE posts SET caption = repeat('a', 2201) WHERE author_sub = 'a'`); err == nil {
+		t.Fatal("une légende trop longue doit être refusée")
 	}
 	var postID string
 	if err := pool.QueryRow(ctx, `SELECT id FROM posts`).Scan(&postID); err != nil {

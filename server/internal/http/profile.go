@@ -216,7 +216,7 @@ func likeContains(value string) string {
 type postItem struct {
 	ID           string    `json:"id"`
 	CreatedAt    time.Time `json:"created_at"`
-	ThumbnailKey *string   `json:"thumbnail_key"`
+	ThumbnailURL *string   `json:"thumbnail_url"`
 	PhotoCount   int       `json:"photo_count"`
 }
 
@@ -265,7 +265,13 @@ func (deps Deps) userPosts(w http.ResponseWriter, r *http.Request) {
 	posts := []postItem{}
 	for rows.Next() {
 		var item postItem
-		if err := rows.Scan(&item.ID, &item.CreatedAt, &item.ThumbnailKey, &item.PhotoCount); err != nil {
+		var key *string
+		if err := rows.Scan(&item.ID, &item.CreatedAt, &key, &item.PhotoCount); err != nil {
+			writeError(w, http.StatusInternalServerError, "profil indisponible")
+			return
+		}
+		item.ThumbnailURL, err = deps.signed(r.Context(), key)
+		if err != nil {
 			writeError(w, http.StatusInternalServerError, "profil indisponible")
 			return
 		}
@@ -281,7 +287,7 @@ func (deps Deps) userPosts(w http.ResponseWriter, r *http.Request) {
 func postPage(w http.ResponseWriter, r *http.Request) (int, *time.Time, *string, bool) {
 	limit := 12
 	if raw := r.URL.Query().Get("limit"); raw != "" {
-		n, err := parseLimit(raw)
+		n, err := parseLimit(raw, 30)
 		if err != nil {
 			writeError(w, http.StatusBadRequest, "page invalide")
 			return 0, nil, nil, false
@@ -301,14 +307,14 @@ func postPage(w http.ResponseWriter, r *http.Request) (int, *time.Time, *string,
 	return limit, &at, &id, true
 }
 
-func parseLimit(raw string) (int, error) {
+func parseLimit(raw string, max int) (int, error) {
 	n := 0
 	for _, c := range raw {
 		if c < '0' || c > '9' {
 			return 0, errors.New("limit")
 		}
 		n = n*10 + int(c-'0')
-		if n > 30 {
+		if n > max {
 			return 0, errors.New("limit")
 		}
 	}
