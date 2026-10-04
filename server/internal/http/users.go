@@ -24,10 +24,15 @@ type Objects interface {
 	Sign(ctx context.Context, key string) (string, error)
 }
 
+type Alerter interface {
+	Send(ctx context.Context, token, text string) error
+}
+
 type Deps struct {
 	Pool     *pgxpool.Pool
 	Sessions *auth.Verifier
 	Objects  Objects
+	Alerts   Alerter
 }
 
 var (
@@ -105,6 +110,10 @@ func New(deps Deps) http.Handler {
 	mux.HandleFunc("DELETE /api/users/{username}/follow", deps.cancelFollow)
 	mux.HandleFunc("POST /api/users/{username}/follow/accept", deps.acceptFollow)
 	mux.HandleFunc("DELETE /api/users/{username}/follow/request", deps.refuseFollow)
+	mux.HandleFunc("GET /api/notifications", deps.listNotifications)
+	mux.HandleFunc("POST /api/notifications/read", deps.readNotifications)
+	mux.HandleFunc("PUT /api/users/me/alert-token", deps.putAlertToken)
+	mux.HandleFunc("DELETE /api/users/me/alert-token", deps.deleteAlertToken)
 	return mux
 }
 

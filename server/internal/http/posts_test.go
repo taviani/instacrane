@@ -167,7 +167,7 @@ func TestPublications(t *testing.T) {
 		t.Fatal("l'auteur du commentaire l'efface")
 	}
 	var notes int
-	if err := pool.QueryRow(ctx, `SELECT count(*) FROM notifications`).Scan(&notes); err != nil || notes != 0 {
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM notifications`).Scan(&notes); err != nil || notes != 4 {
 		t.Fatalf("notifications = %d", notes)
 	}
 

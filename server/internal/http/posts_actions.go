@@ -58,13 +58,30 @@ func (deps Deps) likePost(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "publication indisponible")
 		return
 	}
-	tag, err := deps.Pool.Exec(r.Context(), `
-		INSERT INTO likes (user_sub, post_id) VALUES ($1, $2)
-		ON CONFLICT DO NOTHING
-	`, session.Sub, id)
+	var created bool
+	var recipient *string
+	err := deps.Pool.QueryRow(r.Context(), `
+		WITH liked AS (
+			INSERT INTO likes (user_sub, post_id) VALUES ($1, $2)
+			ON CONFLICT DO NOTHING
+			RETURNING post_id
+		), noted AS (
+			INSERT INTO notifications (recipient_sub, actor_sub, type, post_id)
+			SELECT p.author_sub, $1, 'like', p.id
+			FROM posts p
+			WHERE p.id = $2
+			  AND p.author_sub <> $1
+			  AND EXISTS (SELECT 1 FROM liked)
+			RETURNING recipient_sub
+		)
+		SELECT EXISTS (SELECT 1 FROM liked), (SELECT recipient_sub FROM noted)
+	`, session.Sub, id).Scan(&created, &recipient)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "publication indisponible")
 		return
+	}
+	if recipient != nil {
+		deps.alert(r.Context(), *recipient, session.Sub, "like")
 	}
 	var count int
 	if err := deps.Pool.QueryRow(r.Context(), `SELECT count(*) FROM likes WHERE post_id = $1`, id).Scan(&count); err != nil {
@@ -72,7 +89,7 @@ func (deps Deps) likePost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	code := http.StatusOK
-	if tag.RowsAffected() == 1 {
+	if created {
 		code = http.StatusCreated
 	}
 	writeJSON(w, code, map[string]any{"liked": true, "likes_count": count})
@@ -153,19 +170,31 @@ func (deps Deps) createComment(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var view commentView
+	var recipient *string
 	err := deps.Pool.QueryRow(r.Context(), `
 		WITH inserted AS (
 			INSERT INTO comments (author_sub, post_id, body)
 			VALUES ($1, $2, $3)
-			RETURNING id, body, created_at
+			RETURNING id, author_sub, post_id, body, created_at
+		), noted AS (
+			INSERT INTO notifications (recipient_sub, actor_sub, type, post_id)
+			SELECT p.author_sub, inserted.author_sub, 'comment', p.id
+			FROM inserted
+			JOIN posts p ON p.id = inserted.post_id
+			WHERE p.author_sub <> inserted.author_sub
+			RETURNING recipient_sub
 		)
-		SELECT inserted.id, u.username, u.display_name, inserted.body, inserted.created_at
+		SELECT inserted.id, u.username, u.display_name, inserted.body, inserted.created_at,
+		       (SELECT recipient_sub FROM noted)
 		FROM inserted
-		JOIN users u ON u.sub = $1
-	`, actor, id, body).Scan(&view.ID, &view.Username, &view.DisplayName, &view.Body, &view.CreatedAt)
+		JOIN users u ON u.sub = inserted.author_sub
+	`, actor, id, body).Scan(&view.ID, &view.Username, &view.DisplayName, &view.Body, &view.CreatedAt, &recipient)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "publication indisponible")
 		return
+	}
+	if recipient != nil {
+		deps.alert(r.Context(), *recipient, actor, "comment")
 	}
 	writeJSON(w, http.StatusCreated, view)
 }

@@ -94,7 +94,7 @@ func TestProfilesAndFollows(t *testing.T) {
 		t.Fatalf("lignes de suivi = %d (%v)", rows, err)
 	}
 	var notes int
-	if err := pool.QueryRow(ctx, `SELECT count(*) FROM notifications`).Scan(&notes); err != nil || notes != 0 {
+	if err := pool.QueryRow(ctx, `SELECT count(*) FROM notifications`).Scan(&notes); err != nil || notes != 1 {
 		t.Fatalf("notifications = %d (%v)", notes, err)
 	}
 
