@@ -92,7 +92,7 @@ Tous les comptes sont privés. Sans session, on ne voit rien.
 
 Le fil est une seule suite chronologique. L’ordre est l’heure d’enregistrement de la publication, la plus récente d’abord, que l’auteur soit soi ou un compte dont la demande a été acceptée. Ce n’est pas l’heure qui était dans la photo. Dans une publication, les photos restent dans l’ordre choisi par l’auteur. Au départ, le fil ne contient que ses propres publications. Tous les comptes sont privés : suivre quelqu’un commence par une demande. On le trouve par son nom, on la lui envoie, et lui seul l’accepte. Une demande acceptée donne accès à tout son historique de photos, pas seulement à ce qu’il publie ensuite. Sur son profil, la grille les montre toutes, la plus récente d’abord. Les mêmes publications entrent dans le fil, à leur place chronologique. Ça ne lui donne pas accès aux nôtres. Pour voir les nôtres, il envoie sa propre demande, et on l’accepte à part. Quand les deux demandes sont acceptées, chaque fil mêle les deux, toujours selon cette même heure.
 
-On peut trouver un compte et en voir le nom, l’avatar et la bio avant toute acceptation. Ses photos, y compris celles d’avant l’acceptation, n’apparaissent que si notre demande a été acceptée, ou si c’est nous. Une demande encore en attente ne les ouvre pas. Aimer ou commenter une publication exige de pouvoir la voir. Un blocage retire en plus ces publications du fil, comme déjà décrit.
+On peut trouver un compte et en voir le nom, l’avatar et la bio avant toute acceptation. Ses photos, y compris celles d’avant l’acceptation, n’apparaissent que si notre demande a été acceptée, ou si c’est nous. Une demande encore en attente ne les ouvre pas. Aimer ou commenter une publication exige de pouvoir la voir. Un blocage retire à la personne bloquée l’accès aux photos de celui qui bloque, comme décrit plus bas.
 
 ## Images
 
@@ -114,9 +114,9 @@ Une notification référence le destinataire, l’auteur de l’action, le type 
 
 ## Signalement et blocage
 
-Exigé pour publier sur les stores. Depuis un profil, on signale le compte ou on le bloque. Depuis une publication, on la signale. Un signalement garde qui signale, la cible, et le moment. Rien d’autre.
+Exigé pour publier sur les stores. Depuis un profil, on signale le compte ou on le bloque. Depuis une publication, on la signale. Un signalement garde qui signale, la cible, et le moment. Rien d’autre : pas de motif, pas de notification. Le signaler une nouvelle fois garde un autre moment.
 
-Bloquer empêche les deux comptes de se suivre, de s’aimer et de se commenter. Les demandes en attente partent aussi, dans les deux sens. Le fil de l’un ne montre plus les publications de l’autre. Débloquer annule ça. Supprimer un compte retire ses blocages. Un signalement qui le concerne part avec lui.
+Bloquer retire le suivi qui donnait à la personne bloquée l’accès aux photos de celui qui bloque, qu’il soit en attente ou déjà accepté, et lui interdit d’en redemander. Le suivi inverse reste : celui qui bloque continue de voir les photos de l’autre s’il les voyait déjà, et il peut encore aimer ou commenter. Les likes, commentaires et notifications déjà écrits restent. Débloquer retire l’interdiction de redemander, pas l’ancien suivi. La fiche reste visible. Elle dit le blocage à celui qui l’a posé, et elle ne le dit pas à l’autre. Supprimer un compte retire ses blocages. Un signalement qui le concerne part avec lui.
 
 Plus tard, l’issuer pourra recevoir un signalement remonté par une plateforme, puis bloquer ou supprimer cette identité. Il prévient alors les clients, sans attendre la prochaine connexion : un blocage retire l’accès aux publications, une suppression efface les contenus rattachés au `sub`, dont l’avatar. Un signalement Instacrane ne part pas tout seul vers l’issuer. Quelqu’un en décide là-bas. La première version ne fait pas ce lien. Le modèle est déjà prêt, parce que tout est rangé par `sub` et que la suppression locale sait déjà tout effacer.
 
