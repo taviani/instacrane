@@ -114,6 +114,10 @@ func New(deps Deps) http.Handler {
 	mux.HandleFunc("POST /api/notifications/read", deps.readNotifications)
 	mux.HandleFunc("PUT /api/users/me/alert-token", deps.putAlertToken)
 	mux.HandleFunc("DELETE /api/users/me/alert-token", deps.deleteAlertToken)
+	mux.HandleFunc("POST /api/users/{username}/block", deps.blockUser)
+	mux.HandleFunc("DELETE /api/users/{username}/block", deps.unblockUser)
+	mux.HandleFunc("POST /api/users/{username}/report", deps.reportUser)
+	mux.HandleFunc("POST /api/posts/{id}/report", deps.reportPost)
 	return mux
 }
 
