@@ -27,9 +27,15 @@ func (deps Deps) feed(w http.ResponseWriter, r *http.Request) {
 		JOIN users u ON u.sub = p.author_sub
 		WHERE (
 			p.author_sub = $1
-			OR EXISTS (
-				SELECT 1 FROM follows
-				WHERE follower_sub = $1 AND following_sub = p.author_sub AND status = 'accepted'
+			OR (
+				EXISTS (
+					SELECT 1 FROM follows
+					WHERE follower_sub = $1 AND following_sub = p.author_sub AND status = 'accepted'
+				)
+				AND NOT EXISTS (
+					SELECT 1 FROM blocks
+					WHERE blocker_sub = p.author_sub AND blocked_sub = $1
+				)
 			)
 		)
 		  AND ($2::timestamptz IS NULL OR (p.created_at, p.id) < ($2, $3::uuid))
@@ -98,9 +104,15 @@ func (deps Deps) readPost(ctx context.Context, viewer, id string, withComments b
 		WHERE p.id = $1
 		  AND (
 		    p.author_sub = $2
-		    OR EXISTS (
-		      SELECT 1 FROM follows
-		      WHERE follower_sub = $2 AND following_sub = p.author_sub AND status = 'accepted'
+		    OR (
+		      EXISTS (
+		        SELECT 1 FROM follows
+		        WHERE follower_sub = $2 AND following_sub = p.author_sub AND status = 'accepted'
+		      )
+		      AND NOT EXISTS (
+		        SELECT 1 FROM blocks
+		        WHERE blocker_sub = p.author_sub AND blocked_sub = $2
+		      )
 		    )
 		  )
 	`, id, viewer)

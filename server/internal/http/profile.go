@@ -24,8 +24,9 @@ type person struct {
 
 type publicCard struct {
 	person
-	FollowersCount int `json:"followers_count"`
-	FollowingCount int `json:"following_count"`
+	FollowersCount int  `json:"followers_count"`
+	FollowingCount int  `json:"following_count"`
+	Blocked        bool `json:"blocked"`
 }
 
 func (deps Deps) postAvatar(w http.ResponseWriter, r *http.Request) {
@@ -120,10 +121,11 @@ func (deps Deps) publicProfile(w http.ResponseWriter, r *http.Request) {
 		SELECT u.username, u.display_name, u.bio, u.avatar_key,
 		       (SELECT count(*) FROM follows WHERE following_sub = u.sub AND status = 'accepted'),
 		       (SELECT count(*) FROM follows WHERE follower_sub = u.sub AND status = 'accepted'),
-		       COALESCE((SELECT status FROM follows WHERE follower_sub = $2 AND following_sub = u.sub), 'none')
+		       COALESCE((SELECT status FROM follows WHERE follower_sub = $2 AND following_sub = u.sub), 'none'),
+		       EXISTS (SELECT 1 FROM blocks WHERE blocker_sub = $2 AND blocked_sub = u.sub)
 		FROM users u
 		WHERE u.username = $1
-	`, username, session.Sub).Scan(&card.Username, &card.DisplayName, &card.Bio, &key, &card.FollowersCount, &card.FollowingCount, &card.FollowRequest)
+	`, username, session.Sub).Scan(&card.Username, &card.DisplayName, &card.Bio, &key, &card.FollowersCount, &card.FollowingCount, &card.FollowRequest, &card.Blocked)
 	if errors.Is(err, pgx.ErrNoRows) {
 		writeError(w, http.StatusNotFound, "profil introuvable")
 		return
@@ -231,9 +233,15 @@ func (deps Deps) userPosts(w http.ResponseWriter, r *http.Request) {
 	}
 	var visible bool
 	if err := deps.Pool.QueryRow(r.Context(), `
-		SELECT $1 = $2 OR EXISTS (
-			SELECT 1 FROM follows
-			WHERE follower_sub = $1 AND following_sub = $2 AND status = 'accepted'
+		SELECT $1 = $2 OR (
+			EXISTS (
+				SELECT 1 FROM follows
+				WHERE follower_sub = $1 AND following_sub = $2 AND status = 'accepted'
+			)
+			AND NOT EXISTS (
+				SELECT 1 FROM blocks
+				WHERE blocker_sub = $2 AND blocked_sub = $1
+			)
 		)
 	`, session.Sub, author).Scan(&visible); err != nil {
 		writeError(w, http.StatusInternalServerError, "profil indisponible")

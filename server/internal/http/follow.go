@@ -25,6 +25,19 @@ func (deps Deps) requestFollow(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "demande refusée")
 		return
 	}
+	var blocked bool
+	if err := deps.Pool.QueryRow(r.Context(), `
+		SELECT EXISTS (
+			SELECT 1 FROM blocks WHERE blocker_sub = $1 AND blocked_sub = $2
+		)
+	`, target, actor).Scan(&blocked); err != nil {
+		writeError(w, http.StatusInternalServerError, "profil indisponible")
+		return
+	}
+	if blocked {
+		writeError(w, http.StatusBadRequest, "demande refusée")
+		return
+	}
 	tx, err := deps.Pool.Begin(r.Context())
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "profil indisponible")

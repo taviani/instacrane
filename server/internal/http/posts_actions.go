@@ -217,9 +217,15 @@ func (deps Deps) deleteComment(w http.ResponseWriter, r *http.Request) {
 		  AND (c.author_sub = $3 OR p.author_sub = $3)
 		  AND (
 		    p.author_sub = $3
-		    OR EXISTS (
-		      SELECT 1 FROM follows
-		      WHERE follower_sub = $3 AND following_sub = p.author_sub AND status = 'accepted'
+		    OR (
+		      EXISTS (
+		        SELECT 1 FROM follows
+		        WHERE follower_sub = $3 AND following_sub = p.author_sub AND status = 'accepted'
+		      )
+		      AND NOT EXISTS (
+		        SELECT 1 FROM blocks
+		        WHERE blocker_sub = p.author_sub AND blocked_sub = $3
+		      )
 		    )
 		  )
 	`, commentID, postID, session.Sub)
