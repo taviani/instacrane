@@ -17,11 +17,11 @@ Plan d’implémentation. Le produit reste celui de `spec.md`. On ne code pas la
 
 ## Demande de suivi
 
-Ada cherche Paul, le trouve, et envoie une demande. Paul voit cette demande. Tant qu’il n’a pas accepté, Ada ne voit pas les photos de Paul. Paul accepte : Ada les voit, sur le profil de Paul et, plus tard, dans son fil. Paul ne voit toujours pas les photos d’Ada. Pour ça, Paul envoie une demande à Ada, et Ada l’accepte. Ce sont deux demandes. Aucune n’ouvre les deux sens.
+Virginie cherche Paul, le trouve, et envoie une demande. Paul voit cette demande. Tant qu’il n’a pas accepté, Virginie ne voit pas les photos de Paul. Paul accepte : Virginie les voit, sur le profil de Paul et, plus tard, dans son fil. Paul ne voit toujours pas les photos de Virginie. Pour ça, Paul envoie une demande à Virginie, et Virginie l’accepte. Ce sont deux demandes. Aucune n’ouvre les deux sens.
 
 Se demander à soi-même est refusé. Sans nom d’utilisateur, envoyer une demande est refusé. Une demande déjà en attente ne se duplique pas. Refuser ou annuler retire la demande, et n’ouvre rien. Se désabonner retire une demande acceptée, et referme les photos.
 
-Seul Paul peut accepter ou refuser la demande qu’Ada lui a envoyée. Ada peut annuler la sienne, ou se désabonner ensuite.
+Seul Paul peut accepter ou refuser la demande que Virginie lui a envoyée. Virginie peut annuler la sienne, ou se désabonner ensuite.
 
 La demande crée une notification pour Paul. Cette notification, et la cloche qui la montre, ne sont pas dans cette tranche : elles arrivent avec les notifications, puis avec le client. La liste des demandes reçues, elle, est ici, pour qu’on puisse déjà accepter ou refuser.
 
