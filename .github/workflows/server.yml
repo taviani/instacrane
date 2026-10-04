@@ -34,8 +34,25 @@ jobs:
         with:
           go-version-file: server/go.mod
 
+      - name: MinIO
+        run: |
+          docker run -d --name instacrane-minio -p 9000:9000 \
+            -e MINIO_ROOT_USER=minioaccess \
+            -e MINIO_ROOT_PASSWORD=miniosecret \
+            cgr.dev/chainguard/minio:latest server /data
+          for _ in $(seq 1 30); do
+            curl -sf http://127.0.0.1:9000/minio/health/live && exit 0
+            sleep 1
+          done
+          echo "MinIO n'a pas répondu" >&2
+          exit 1
+
       - name: Migrations et tests
         working-directory: server
         env:
           DATABASE_URL: postgres://instacrane:instacrane@localhost:5432/instacrane?sslmode=disable
+          STORAGE_ENDPOINT: http://127.0.0.1:9000
+          STORAGE_BUCKET: instacrane-media
+          STORAGE_ACCESS_KEY: minioaccess
+          STORAGE_SECRET_KEY: miniosecret
         run: go test ./...

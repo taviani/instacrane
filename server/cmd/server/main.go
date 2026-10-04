@@ -9,6 +9,7 @@ import (
 	"github.com/taviani/instacrane/server/internal/config"
 	"github.com/taviani/instacrane/server/internal/db"
 	api "github.com/taviani/instacrane/server/internal/http"
+	"github.com/taviani/instacrane/server/internal/media"
 )
 
 func main() {
@@ -29,11 +30,16 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+	objects, err := media.NewStore(cfg.Storage)
+	if err != nil {
+		log.Fatal(err)
+	}
 	server := &http.Server{
 		Addr: cfg.Addr,
 		Handler: api.New(api.Deps{
 			Pool:     pool,
 			Sessions: sessions,
+			Objects:  objects,
 		}),
 	}
 	log.Fatal(server.ListenAndServe())
