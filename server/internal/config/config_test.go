@@ -16,8 +16,17 @@ func TestLoadRejectsNonPostgresURL(t *testing.T) {
 	}
 }
 
+func TestLoadRequiresIssuerURL(t *testing.T) {
+	t.Setenv("DATABASE_URL", "postgres://localhost/instacrane")
+	t.Setenv("ISSUER_URL", "")
+	if _, err := Load(); err == nil {
+		t.Fatal("une adresse d'issuer absente doit être refusée")
+	}
+}
+
 func TestLoadAcceptsPostgresURL(t *testing.T) {
 	t.Setenv("DATABASE_URL", "postgres://localhost/instacrane")
+	t.Setenv("ISSUER_URL", "http://127.0.0.1:9")
 	cfg, err := Load()
 	if err != nil {
 		t.Fatal(err)
@@ -27,5 +36,8 @@ func TestLoadAcceptsPostgresURL(t *testing.T) {
 	}
 	if cfg.DatabaseURL != "postgres://localhost/instacrane" {
 		t.Fatalf("url = %s", cfg.DatabaseURL)
+	}
+	if cfg.IssuerURL != "http://127.0.0.1:9" {
+		t.Fatalf("issuer = %s", cfg.IssuerURL)
 	}
 }
