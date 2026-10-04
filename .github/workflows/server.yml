@@ -1,0 +1,41 @@
+name: Server
+
+on:
+  push:
+    paths:
+      - "server/**"
+      - ".github/workflows/server.yml"
+  pull_request:
+    paths:
+      - "server/**"
+      - ".github/workflows/server.yml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: instacrane
+          POSTGRES_PASSWORD: instacrane
+          POSTGRES_DB: instacrane
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: server/go.mod
+
+      - name: Migrations et tests
+        working-directory: server
+        env:
+          DATABASE_URL: postgres://instacrane:instacrane@localhost:5432/instacrane?sslmode=disable
+        run: go test ./...
