@@ -25,6 +25,7 @@ build/
 *.tfstate
 *.tfstate.backup
 *.tfplan
+*.tfvars
 
 # OS
 .DS_Store

@@ -1,14 +1,8 @@
-name: Server
+name: CI
 
 on:
   push:
-    paths:
-      - "server/**"
-      - ".github/workflows/server.yml"
   pull_request:
-    paths:
-      - "server/**"
-      - ".github/workflows/server.yml"
 
 jobs:
   test:
@@ -56,3 +50,24 @@ jobs:
           STORAGE_ACCESS_KEY: minioaccess
           STORAGE_SECRET_KEY: miniosecret
         run: go test ./...
+
+  image:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Image
+        run: docker build -f server/Dockerfile .
+
+  terraform:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+
+      - name: Validate
+        working-directory: infra
+        run: terraform init -backend=false && terraform validate

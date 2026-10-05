@@ -20,6 +20,7 @@ type Config struct {
 	Storage     Storage
 	Addr        string
 	Origins     []string
+	WebRoot     string
 }
 
 func Load() (Config, error) {
@@ -39,7 +40,14 @@ func Load() (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
-	return Config{DatabaseURL: raw, IssuerURL: issuer, Storage: storage, Addr: ":8000", Origins: origins()}, nil
+	return Config{
+		DatabaseURL: raw,
+		IssuerURL:   issuer,
+		Storage:     storage,
+		Addr:        ":8000",
+		Origins:     origins(),
+		WebRoot:     strings.TrimSpace(os.Getenv("WEB_ROOT")),
+	}, nil
 }
 
 func origins() []string {

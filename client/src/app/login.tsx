@@ -17,7 +17,7 @@ export default function LoginScreen() {
         <Muted>La session vient de l’issuer. L’application ne choisit pas de mot de passe.</Muted>
       ) : (
         <Muted>
-          La connexion a besoin d’une configuration locale : l’adresse de l’API, l’adresse de l’issuer et l’identifiant de client.
+          La connexion a besoin de l’adresse de l’issuer et de l’identifiant de client. Sans adresse d’API, les appels restent sur le même site.
         </Muted>
       )}
       <ErrorText>{error}</ErrorText>

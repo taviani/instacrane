@@ -18,5 +18,5 @@ export function config(): ClientConfig {
 
 export function authConfigured(): boolean {
   const current = config();
-  return Boolean(current.apiUrl && current.issuerUrl && current.clientId);
+  return Boolean(current.issuerUrl && current.clientId);
 }
