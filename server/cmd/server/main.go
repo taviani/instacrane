@@ -36,11 +36,11 @@ func main() {
 	}
 	server := &http.Server{
 		Addr: cfg.Addr,
-		Handler: api.New(api.Deps{
+		Handler: api.WithCORS(api.New(api.Deps{
 			Pool:     pool,
 			Sessions: sessions,
 			Objects:  objects,
-		}),
+		}), cfg.Origins),
 	}
 	log.Fatal(server.ListenAndServe())
 }

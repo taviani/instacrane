@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "Instacrane",
+    "slug": "instacrane",
+    "scheme": "instacrane",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "app.instacrane"
+    },
+    "android": {
+      "package": "app.instacrane",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-web-browser",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Instacrane accède aux photos pour les publier.",
+          "cameraPermission": "Instacrane accède à l’appareil photo pour publier."
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Instacrane utilise la position seulement si vous l’ajoutez à une publication."
+        }
+      ]
+    ]
+  }
+}
