@@ -102,7 +102,7 @@ En local, `docker compose` lance Postgres et l’API. Postgres n’écoute que s
 
 ## Intégration continue
 
-À chaque poussée et à chaque pull request, sans secret :
+À chaque poussée et à chaque pull request, les contrôles tournent sans secret :
 
 - les tests Go, Postgres 16 et MinIO
 - la construction de l’image, sans registre
