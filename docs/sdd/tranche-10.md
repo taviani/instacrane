@@ -7,7 +7,7 @@ La tranche 9 a posé la configuration de build, sans identifiant de compte. Elle
 ## Fait quand
 
 - L’image tourne sur l’hôte déjà choisi, port 8000, avec Postgres et le bucket privé. `GET /api/health` répond sur cet hôte.
-- Le site public est ce même processus. Dans l’image, l’adresse d’API est vide.
+- Le site public est ce même processus. Dans l’image, l’adresse d’API est celle du site d’API. `CORS_ORIGINS` liste les origines du site.
 - Le client chez l’issuer accepte le retour de ce site et le retour `instacrane`, chemin `/redirect`. Le navigateur termine l’échange depuis l’origine du site.
 - Une connexion depuis ce site arrive à l’écran du nom, ou au fil si le nom est déjà choisi.
 - Un workflow manuel lance les builds téléphone. Il ne part ni à la poussée ni à la pull request. Deux cases : soumettre iOS vers TestFlight, soumettre Android vers la piste interne. Aucune case : build iOS seul, sans soumission. La case Android seule construit Android et le soumet, sans build iOS. Les deux cases construisent les deux et les soumettent. Android n’est pas construit sans sa soumission.

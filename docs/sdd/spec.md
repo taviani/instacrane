@@ -84,7 +84,7 @@ Barre du bas : fil, recherche, publication, cloche, profil. Écrans en plus : co
 
 L’API, Postgres et le site tournent sur l’hôte déjà choisi. Les images n’y sont pas stockées. Elles vont dans un bucket Scaleway privé, en France, classe standard multi-zones. Le dépôt ne décrit que ce bucket. L’apply est manuel. Le nom du bucket, l’identifiant de projet et les clés restent dans un fichier local ignoré par git. L’état Terraform aussi.
 
-L’image contient le binaire Go et l’export web. Elle écoute sur le port 8000. `/api` est l’API. Le reste sert un fichier s’il existe, sinon la page de l’export. Même origine. Cette spec ne nomme ni l’hôte ni un registre.
+L’image contient le binaire Go et l’export web. Elle écoute sur le port 8000. `/api` est l’API. Le reste sert un fichier s’il existe, sinon la page de l’export. Le site et l’API sont sur deux origines. L’origine du site sert l’export. L’origine de l’API ne répond qu’à `/api`. La porte devant le processus fait ce partage et n’est pas dans le dépôt. L’adresse de l’API est reprise dans l’image au moment de la construction. Cette spec ne nomme ni l’hôte, ni ces origines, ni un registre.
 
 Mettre l’image sur l’hôte fait partie du produit. Sur `main`, une fois les contrôles passés, les sources sont copiées sur l’hôte et l’image y est construite. Le processus lit son environnement sur place. Ce fichier n’est pas copié.
 
@@ -92,9 +92,9 @@ Mettre l’image sur l’hôte fait partie du produit. Sur `main`, une fois les 
 
 Les exemples du dépôt sont vides. Les valeurs sont hors du dépôt.
 
-L’API lit `DATABASE_URL`, `ISSUER_URL`, `STORAGE_ENDPOINT`, `STORAGE_BUCKET`, `STORAGE_ACCESS_KEY`, `STORAGE_SECRET_KEY`, `WEB_ROOT`, `CORS_ORIGINS`. Elle ne lit pas le fichier toute seule. `WEB_ROOT` est le dossier de l’export dans l’image, vide sans site. `CORS_ORIGINS` est vide quand le site est servi par l’API.
+L’API lit `DATABASE_URL`, `ISSUER_URL`, `STORAGE_ENDPOINT`, `STORAGE_BUCKET`, `STORAGE_ACCESS_KEY`, `STORAGE_SECRET_KEY`, `WEB_ROOT`, `CORS_ORIGINS`. Elle ne lit pas le fichier toute seule. `WEB_ROOT` est le dossier de l’export dans l’image, vide sans site. `CORS_ORIGINS` liste les origines du site, séparées par des virgules.
 
-Le client lit `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_ISSUER_URL`, `EXPO_PUBLIC_CLIENT_ID`. Sans adresse d’API, les appels du site restent sur le même site. L’adresse de l’issuer et l’identifiant de client sont pris à la construction de l’image. Pour le téléphone, l’adresse d’API, l’issuer et l’identifiant de client viennent des secrets du workflow manuel. `EXPO_OWNER` et `EXPO_PROJECT_ID` identifient le projet de build. `EXPO_TOKEN` l’autorise. `EXPO_ASC_APP_ID` n’est exigé que pour soumettre iOS. Le compte de service Android est lié dans EAS. Aucune de ces valeurs n’est dans le dépôt.
+Le client lit `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_ISSUER_URL`, `EXPO_PUBLIC_CLIENT_ID`. Sans adresse d’API, les appels du site restent sur le même site. En production, l’adresse d’API est celle du site d’API, prise à la construction de l’image. L’adresse de l’issuer et l’identifiant de client sont pris au même moment. Pour le téléphone, l’adresse d’API, l’issuer et l’identifiant de client viennent des secrets du workflow manuel. `EXPO_OWNER` et `EXPO_PROJECT_ID` identifient le projet de build. `EXPO_TOKEN` l’autorise. `EXPO_ASC_APP_ID` n’est exigé que pour soumettre iOS. Le compte de service Android est lié dans EAS. Aucune de ces valeurs n’est dans le dépôt.
 
 Le client chez l’issuer est public, sans secret. Il reconnaît trois retours : le web local, `instacrane` sur le téléphone, et le site public. Le chemin est `/redirect`. Le navigateur doit pouvoir terminer l’échange avec l’issuer depuis l’origine du site.
 
@@ -123,7 +123,7 @@ Déménager l’API hors de son hôte. Stories, messages, explore, republication
 
 ## Découpage
 
-Une tranche à la fois.
+Une tranche à la fois. Un écart vu après une tranche fermée suit le même ordre, en plus court. La règle est d’abord ajoutée ici, puis un plan dans ce dossier. Le changement vient ensuite. On ne le commit pas sans ce plan.
 
 1. Socle. Migrations, `GET /api/health`.
 2. Auth. Session, profil, email, nom d’utilisateur.
