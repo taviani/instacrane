@@ -12,13 +12,15 @@ La tranche 9 a posé la configuration de build, sans identifiant de compte. Elle
 - Une connexion depuis ce site arrive à l’écran du nom, ou au fil si le nom est déjà choisi.
 - Un workflow manuel lance les builds téléphone. Il ne part ni à la poussée ni à la pull request. Deux cases : soumettre iOS vers TestFlight, soumettre Android vers la piste interne. Aucune case : build iOS seul, sans soumission. La case Android seule construit Android et le soumet, sans build iOS. Les deux cases construisent les deux et les soumettent. Android n’est pas construit sans sa soumission.
 - Ce workflow lit `EXPO_TOKEN`, `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_ISSUER_URL`, `EXPO_PROJECT_ID`. `EXPO_PUBLIC_CLIENT_ID` et `EXPO_OWNER` s’y ajoutent. `EXPO_ASC_APP_ID` est exigé quand la case iOS est cochée. Le compte de service Android est lié dans EAS. Aucune de ces valeurs n’est dans le dépôt. L’adresse d’API, l’issuer et l’identifiant de client du téléphone viennent de ces secrets au moment du build.
+- Sur `main`, une fois les contrôles passés, les sources sont copiées sur l’hôte et l’image y est construite. Le déploiement lit `DEPLOY_SSH_KEY`, `DEPLOY_USER`, `DEPLOY_HOST`, `DEPLOY_PATH`. L’environnement reste sur l’hôte et n’est pas copié.
 - Le dépôt ne reçoit ni le nom de l’hôte, ni une clé, ni un identifiant de compte.
 
 ## Où
 
 ```
-.github/workflows/   le workflow manuel
-hors du dépôt        l’image sur l’hôte, son environnement, les secrets, le retour chez l’issuer
+.github/workflows/   le workflow manuel, et le déploiement sur main
+docker-compose.yml   Postgres et l’API
+hors du dépôt        l’environnement sur l’hôte, les secrets, le retour chez l’issuer
 ```
 
 `client/app.config.js` et `client/eas.json` restent ceux de la tranche 9. Le workflow y injecte les valeurs au lancement, sans les commiter. L’API et le Terraform du bucket ne changent pas.

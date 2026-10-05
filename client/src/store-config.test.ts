@@ -45,6 +45,17 @@ test('le workflow téléphone est manuel et sans valeur de compte', () => {
   assert.equal(text.includes('serviceAccount'), false);
 });
 
+test('le déploiement copie les sources sans emporter l’environnement', () => {
+  const text = readFileSync(new URL('../../.github/workflows/ci.yml', import.meta.url), 'utf8');
+  for (const name of ['DEPLOY_SSH_KEY', 'DEPLOY_USER', 'DEPLOY_HOST', 'DEPLOY_PATH']) {
+    assert.equal(text.includes(name), true, name);
+  }
+  assert.match(text, /refs\/heads\/main/);
+  assert.match(text, /--exclude \.env/);
+  assert.match(text, /docker-compose up -d --build/);
+  assert.equal(text.includes('https://'), false);
+});
+
 test('la configuration chargée n’ajoute pas de compte', () => {
   const env = { ...process.env, EXPO_NO_TELEMETRY: '1', CI: '1' };
   delete env.EXPO_OWNER;

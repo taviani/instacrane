@@ -93,3 +93,60 @@ jobs:
       - name: Validate
         working-directory: infra
         run: terraform init -backend=false && terraform validate
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: [test, image, client, terraform]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    concurrency:
+      group: deploy
+      cancel-in-progress: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Secrets de déploiement
+        env:
+          DEPLOY_SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          missing=0
+          for name in DEPLOY_SSH_KEY DEPLOY_USER DEPLOY_HOST DEPLOY_PATH; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Secret $name absent"
+              missing=1
+            fi
+          done
+          exit $missing
+
+      - name: SSH
+        uses: webfactory/ssh-agent@v0.10.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_SSH_KEY }}
+          log-public-key: false
+
+      - name: Hôte connu
+        env:
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+        run: ssh-keyscan -H "$DEPLOY_HOST" >> ~/.ssh/known_hosts
+
+      - name: Déploiement
+        env:
+          DEPLOY_USER: ${{ secrets.DEPLOY_USER }}
+          DEPLOY_HOST: ${{ secrets.DEPLOY_HOST }}
+          DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
+        run: |
+          rsync -avz --delete \
+            --exclude .env \
+            --exclude '.env.*' \
+            --exclude secrets \
+            --exclude node_modules \
+            --exclude client/node_modules \
+            --exclude .git \
+            --exclude .expo \
+            --exclude infra/.terraform \
+            --exclude '*.tfstate' \
+            --exclude '*.tfvars' \
+            ./ "${DEPLOY_USER}@${DEPLOY_HOST}:${DEPLOY_PATH}"
+          ssh "${DEPLOY_USER}@${DEPLOY_HOST}" "cd ${DEPLOY_PATH} && docker-compose up -d --build"

@@ -2,13 +2,37 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_USER: instacrane
-      POSTGRES_PASSWORD: instacrane
-      POSTGRES_DB: instacrane
+      POSTGRES_USER: ${POSTGRES_USER:-instacrane}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-instacrane}
+      POSTGRES_DB: ${POSTGRES_DB:-instacrane}
     ports:
-      - "5432:5432"
+      - "127.0.0.1:${POSTGRES_HOST_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-instacrane} -d ${POSTGRES_DB:-instacrane}"]
+      interval: 2s
+      timeout: 5s
+      retries: 15
+      start_period: 10s
+
+  api:
+    build:
+      context: .
+      dockerfile: server/Dockerfile
+      args:
+        EXPO_PUBLIC_API_URL: ${EXPO_PUBLIC_API_URL:-}
+        EXPO_PUBLIC_ISSUER_URL: ${EXPO_PUBLIC_ISSUER_URL:-}
+        EXPO_PUBLIC_CLIENT_ID: ${EXPO_PUBLIC_CLIENT_ID:-}
+    ports:
+      - "${API_HOST_PORT:-8000}:8000"
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-instacrane}:${POSTGRES_PASSWORD:-instacrane}@db:5432/${POSTGRES_DB:-instacrane}?sslmode=disable
+      WEB_ROOT: /web
+    depends_on:
+      db:
+        condition: service_healthy
 
 volumes:
   pgdata:
