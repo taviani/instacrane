@@ -41,7 +41,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "test": "tsx --test src/media.test.ts"
+    "test": "tsx --test src/media.test.ts src/config.test.ts"
   },
   "private": true
 }

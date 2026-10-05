@@ -1,38 +1,34 @@
 # Instacrane
 
-Clone Instagram open source, sans GAFAM, hébergé en France (Scaleway), RGPD-compliant, sans cookies.
+Comptes privés, photos, fil chronologique. Pas de mot de passe dans l’application : la session vient de l’issuer. Pas de cookies.
 
 ## Stack
 
-- **Frontend** : SvelteKit + Svelte 5 (runes syntax)
-- **Backend** : Python 3.12 + FastAPI + SQLAlchemy 2.0 async
-- **BDD** : PostgreSQL 16
-- **Stockage images** : Scaleway Object Storage (S3-compatible)
-- **Infra** : Terraform + Docker + GitHub Actions
-- **Auth** : JWT en header Authorization (pas de cookies)
+- **Client** : une app Expo, les mêmes écrans sur iOS, Android et le web
+- **API** : Go, Postgres 16
+- **Images** : bucket privé Scaleway, classe standard multi-zones, en France
+- **Hébergement** : l’API et l’export web tournent sur l’hôte déjà choisi, port 8000
+- **Infra** : Terraform du bucket seul
 
 ## Conventions
 
-- Commits en français, format conventionnel (feat:, fix:, docs:, etc.)
-- Code Python : ruff + black
-- Frontend : Svelte 5 runes ($state, $derived, $effect), vanilla CSS
-- API : FastAPI avec async, SQLAlchemy AsyncSession
-- Toute PR doit passer les tests et le lint
+- Commits en français, format conventionnel (`feat:`, `fix:`, `docs:`)
+- Toute PR doit passer les tests
 
 ## Structure
 
 ```
-backend/       → API FastAPI
-frontend/      → App SvelteKit
-infra/         → Terraform (Scaleway)
-.github/       → CI/CD GitHub Actions
+client/    app Expo
+server/    API Go et image
+infra/     bucket Scaleway
 ```
 
 ## Commandes
 
 ```bash
-# Dev local
-docker compose up -d          # Lance PostgreSQL + MinIO (S3 local)
-cd backend && pip install -e . && uvicorn api.main:app --reload
-cd frontend && npm install && npm run dev
+docker compose up -d
+cd server && go test ./...
+cd client && npm install && npx expo start --web
 ```
+
+Les images de test passent par MinIO, lancé à part. La configuration locale n’est pas dans le dépôt.
