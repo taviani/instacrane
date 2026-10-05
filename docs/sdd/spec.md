@@ -86,7 +86,7 @@ L’API, Postgres et le site tournent sur l’hôte déjà choisi. Les images n�
 
 L’image contient le binaire Go et l’export web. Elle écoute sur le port 8000. `/api` est l’API. Le reste sert un fichier s’il existe, sinon la page de l’export. Même origine. Cette spec ne nomme ni l’hôte ni un registre.
 
-Mettre l’image sur l’hôte fait partie du produit. Le processus reçoit son environnement sur place.
+Mettre l’image sur l’hôte fait partie du produit. Sur `main`, une fois les contrôles passés, les sources sont copiées sur l’hôte et l’image y est construite. Le processus lit son environnement sur place. Ce fichier n’est pas copié.
 
 ## Configuration
 
@@ -98,16 +98,18 @@ Le client lit `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_ISSUER_URL`, `EXPO_PUBLIC_CLIE
 
 Le client chez l’issuer est public, sans secret. Il reconnaît trois retours : le web local, `instacrane` sur le téléphone, et le site public. Le chemin est `/redirect`. Le navigateur doit pouvoir terminer l’échange avec l’issuer depuis l’origine du site.
 
-En local, `docker compose` lance Postgres. Les tests d’images passent par MinIO, lancé à part.
+En local, `docker compose` lance Postgres et l’API. Postgres n’écoute que sur la machine. Les tests d’images passent par MinIO, lancé à part.
 
 ## Intégration continue
 
-À chaque poussée et à chaque pull request, sans secret :
+À chaque poussée et à chaque pull request, les contrôles tournent sans secret :
 
 - les tests Go, Postgres 16 et MinIO
-- la construction de l’image, sans la pousser
+- la construction de l’image, sans registre
 - `terraform validate`, sans apply
 - les tests du client : la configuration se charge, les identifiants restent `app.instacrane`, le schéma reste `instacrane`, aucun compte Apple, Google ou Expo dans le dépôt
+
+Sur `main`, le déploiement lit `DEPLOY_SSH_KEY`, `DEPLOY_USER`, `DEPLOY_HOST`, `DEPLOY_PATH`. Aucune de ces valeurs n’est dans le dépôt.
 
 Un workflow manuel lance les builds téléphone. Il ne part ni à la poussée ni à la pull request. Deux cases : soumettre iOS vers TestFlight, soumettre Android vers la piste interne. Aucune case : build iOS seul, sans soumission. La case Android seule construit Android et le soumet, sans build iOS. Les deux cases construisent les deux et les soumettent. Android n’est pas construit sans sa soumission.
 

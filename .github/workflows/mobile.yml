@@ -1,0 +1,140 @@
+name: Mobile
+
+on:
+  workflow_dispatch:
+    inputs:
+      submit_ios:
+        description: "iOS : build et soumission TestFlight (secret EXPO_ASC_APP_ID)"
+        type: boolean
+        default: false
+      submit_android:
+        description: "Android : build et soumission piste interne (compte de service déjà lié dans EAS)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: mobile-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  eas-build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: client
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Secrets
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EXPO_PUBLIC_API_URL: ${{ secrets.EXPO_PUBLIC_API_URL }}
+          EXPO_PUBLIC_ISSUER_URL: ${{ secrets.EXPO_PUBLIC_ISSUER_URL }}
+          EXPO_PUBLIC_CLIENT_ID: ${{ secrets.EXPO_PUBLIC_CLIENT_ID }}
+          EXPO_PROJECT_ID: ${{ secrets.EXPO_PROJECT_ID }}
+          EXPO_OWNER: ${{ secrets.EXPO_OWNER }}
+        run: |
+          missing=0
+          for name in EXPO_TOKEN EXPO_PUBLIC_API_URL EXPO_PUBLIC_ISSUER_URL EXPO_PUBLIC_CLIENT_ID EXPO_PROJECT_ID EXPO_OWNER; do
+            if [ -z "${!name}" ]; then
+              echo "::error::Secret $name absent"
+              missing=1
+            fi
+          done
+          exit $missing
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Dépendances
+        run: npm ci --legacy-peer-deps
+
+      - name: Valeurs du build
+        env:
+          EXPO_PUBLIC_API_URL: ${{ secrets.EXPO_PUBLIC_API_URL }}
+          EXPO_PUBLIC_ISSUER_URL: ${{ secrets.EXPO_PUBLIC_ISSUER_URL }}
+          EXPO_PUBLIC_CLIENT_ID: ${{ secrets.EXPO_PUBLIC_CLIENT_ID }}
+          EXPO_ASC_APP_ID: ${{ secrets.EXPO_ASC_APP_ID }}
+        run: |
+          node <<'NODE'
+          const fs = require("fs");
+          const eas = JSON.parse(fs.readFileSync("eas.json", "utf8"));
+          const apiUrl = process.env.EXPO_PUBLIC_API_URL;
+          const issuerUrl = process.env.EXPO_PUBLIC_ISSUER_URL;
+          const clientId = process.env.EXPO_PUBLIC_CLIENT_ID;
+          for (const name of Object.keys(eas.build || {})) {
+            eas.build[name].env = {
+              ...(eas.build[name].env || {}),
+              EXPO_PUBLIC_API_URL: apiUrl,
+              EXPO_PUBLIC_ISSUER_URL: issuerUrl,
+              EXPO_PUBLIC_CLIENT_ID: clientId,
+            };
+          }
+          const ascAppId = process.env.EXPO_ASC_APP_ID;
+          if (ascAppId) {
+            for (const name of Object.keys(eas.submit || {})) {
+              eas.submit[name].ios = {
+                ...(eas.submit[name].ios || {}),
+                ascAppId,
+              };
+            }
+          }
+          fs.writeFileSync("eas.json", JSON.stringify(eas, null, 2) + "\n");
+          NODE
+
+      - uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+          EXPO_PROJECT_ID: ${{ secrets.EXPO_PROJECT_ID }}
+          EXPO_OWNER: ${{ secrets.EXPO_OWNER }}
+          EXPO_ASC_APP_ID: ${{ secrets.EXPO_ASC_APP_ID }}
+          SUBMIT_IOS: ${{ github.event_name == 'workflow_dispatch' && inputs.submit_ios || false }}
+          SUBMIT_ANDROID: ${{ github.event_name == 'workflow_dispatch' && inputs.submit_android || false }}
+        run: |
+          set -euo pipefail
+          do_ios=true
+          do_android=false
+          if [ "${SUBMIT_ANDROID}" = "true" ] && [ "${SUBMIT_IOS}" != "true" ]; then
+            do_ios=false
+          fi
+          if [ "${SUBMIT_ANDROID}" = "true" ]; then
+            do_android=true
+          fi
+
+          eas_build() {
+            local platform="$1"
+            local submit="$2"
+            local args=(build --platform "$platform" --profile preview --non-interactive --no-wait)
+            if [ "$submit" = "true" ]; then
+              args+=(--auto-submit)
+            fi
+            echo "eas ${args[*]}"
+            eas "${args[@]}"
+          }
+
+          if [ "$do_ios" = "true" ]; then
+            if [ "${SUBMIT_IOS}" = "true" ]; then
+              if [ -z "${EXPO_ASC_APP_ID:-}" ]; then
+                echo "::error::La soumission iOS exige le secret EXPO_ASC_APP_ID"
+                exit 1
+              fi
+              echo "Build iOS avec soumission TestFlight."
+              eas_build ios true
+            else
+              echo "Build iOS sans soumission."
+              eas_build ios false
+            fi
+          fi
+
+          if [ "$do_android" = "true" ]; then
+            echo "Build Android avec soumission sur la piste interne."
+            eas_build android true
+          fi
