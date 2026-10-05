@@ -8,6 +8,8 @@ API en Go. Une app Expo, les mêmes écrans sur iOS, Android et le web. Comptes 
 
 L’app obtient la session auprès de l’issuer. L’API la vérifie. Le `sub` est l’identité. L’app renouvelle au démarrage, au retour au premier plan, et quand l’API refuse l’accès. Un seul renouvellement à la fois. Une coupure réseau ne déconnecte pas.
 
+L’application n’a pas d’écran d’inscription. Le compte se crée chez l’issuer. Quand l’issuer affiche la connexion d’un client public qui n’est pas sur invitation, l’écran propose le formulaire d’inscription à qui n’a pas encore de compte. Un client sur invitation ne propose pas ce lien.
+
 Au premier appel authentifié, l’API crée le profil et recopie l’email du jeton. L’email n’est pas modifiable, et il n’est jamais montré aux autres. Nom affiché, bio et avatar sont locaux.
 
 Le nom d’utilisateur (`^[a-zA-Z0-9_.]+$`, 3 à 30 caractères, unique) se choisit une fois. `me` et `search` sont refusés. Tant qu’il est vide, l’app reste sur l’écran de choix. Publier, commenter, suivre, bloquer et signaler sont refusés. `GET /api/users/me`, le `PATCH` du nom, et aimer restent autorisés.
@@ -78,7 +80,7 @@ Le fil et la grille demandent 12 publications, 30 au plus, les plus anciennes av
 
 ## Client
 
-Barre du bas : fil, recherche, publication, cloche, profil. Écrans en plus : connexion, choix du nom, détail, listes d’abonnés et d’abonnements, demandes reçues, signalement, blocage, explication des données. Le web est l’export Expo.
+Barre du bas : fil, recherche, publication, cloche, profil. Écrans en plus : connexion, choix du nom, détail, listes d’abonnés et d’abonnements, demandes reçues, signalement, blocage, explication des données. Pas d’écran d’inscription. Le web est l’export Expo.
 
 ## Hébergement
 
@@ -96,7 +98,7 @@ L’API lit `DATABASE_URL`, `ISSUER_URL`, `STORAGE_ENDPOINT`, `STORAGE_BUCKET`, 
 
 Le client lit `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_ISSUER_URL`, `EXPO_PUBLIC_CLIENT_ID`. Sans adresse d’API, les appels du site restent sur le même site. En production, l’adresse d’API est celle du site d’API, prise à la construction de l’image. L’adresse de l’issuer et l’identifiant de client sont pris au même moment. Pour le téléphone, l’adresse d’API, l’issuer et l’identifiant de client viennent des secrets du workflow manuel. `EXPO_OWNER` et `EXPO_PROJECT_ID` identifient le projet de build. `EXPO_TOKEN` l’autorise. `EXPO_ASC_APP_ID` n’est exigé que pour soumettre iOS. Le compte de service Android est lié dans EAS. Aucune de ces valeurs n’est dans le dépôt.
 
-Le client chez l’issuer est public, sans secret. Il reconnaît trois retours : le web local, `instacrane` sur le téléphone, et le site public. Le chemin est `/redirect`. Le navigateur doit pouvoir terminer l’échange avec l’issuer depuis l’origine du site.
+Le client chez l’issuer est public, sans secret, et il n’est pas sur invitation. Il ne demande pas lui-même l’inscription : l’écran de connexion de l’issuer propose le formulaire. Il reconnaît trois retours : le web local, `instacrane` sur le téléphone, et le site public. Le chemin est `/redirect`. Sur le web, la connexion reste dans le même onglet. Le navigateur doit pouvoir terminer l’échange avec l’issuer depuis l’origine du site.
 
 En local, `docker compose` lance Postgres et l’API. Postgres n’écoute que sur la machine. Les tests d’images passent par MinIO, lancé à part.
 
@@ -119,7 +121,7 @@ Renovate surveille les bibliothèques. Une zéro-day est prise le jour du correc
 
 ## Hors périmètre
 
-Déménager l’API hors de son hôte. Stories, messages, explore, republication, comptes publics, vidéos. Changer le nom d’utilisateur. Remonter un signalement vers l’issuer.
+Déménager l’API hors de son hôte. Stories, messages, explore, republication, comptes publics, vidéos. Changer le nom d’utilisateur. Remonter un signalement vers l’issuer. Un écran d’inscription dans l’application.
 
 ## Découpage
 
