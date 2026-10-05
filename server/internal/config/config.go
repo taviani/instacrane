@@ -19,6 +19,7 @@ type Config struct {
 	IssuerURL   string
 	Storage     Storage
 	Addr        string
+	Origins     []string
 }
 
 func Load() (Config, error) {
@@ -38,7 +39,22 @@ func Load() (Config, error) {
 	if err != nil {
 		return Config{}, err
 	}
-	return Config{DatabaseURL: raw, IssuerURL: issuer, Storage: storage, Addr: ":8000"}, nil
+	return Config{DatabaseURL: raw, IssuerURL: issuer, Storage: storage, Addr: ":8000", Origins: origins()}, nil
+}
+
+func origins() []string {
+	raw := strings.TrimSpace(os.Getenv("CORS_ORIGINS"))
+	if raw == "" {
+		return nil
+	}
+	var list []string
+	for _, item := range strings.Split(raw, ",") {
+		item = strings.TrimSpace(item)
+		if item != "" {
+			list = append(list, item)
+		}
+	}
+	return list
 }
 
 func storageConfig() (Storage, error) {
