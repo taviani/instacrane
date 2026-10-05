@@ -59,6 +59,28 @@ jobs:
       - name: Image
         run: docker build -f server/Dockerfile .
 
+  client:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: client/package-lock.json
+
+      - name: Dépendances
+        working-directory: client
+        run: npm ci --legacy-peer-deps
+
+      - name: Configuration et tests
+        working-directory: client
+        env:
+          EXPO_NO_TELEMETRY: "1"
+          CI: "1"
+        run: npm test
+
   terraform:
     runs-on: ubuntu-latest
     steps:
