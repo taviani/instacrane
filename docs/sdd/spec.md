@@ -94,7 +94,7 @@ Les exemples du dépôt sont vides. Les valeurs sont hors du dépôt.
 
 L’API lit `DATABASE_URL`, `ISSUER_URL`, `STORAGE_ENDPOINT`, `STORAGE_BUCKET`, `STORAGE_ACCESS_KEY`, `STORAGE_SECRET_KEY`, `WEB_ROOT`, `CORS_ORIGINS`. Elle ne lit pas le fichier toute seule. `WEB_ROOT` est le dossier de l’export dans l’image, vide sans site. `CORS_ORIGINS` est vide quand le site est servi par l’API.
 
-Le client lit `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_ISSUER_URL`, `EXPO_PUBLIC_CLIENT_ID`. Sans adresse d’API, les appels restent sur le même site. L’adresse de l’issuer et l’identifiant de client sont pris à la construction de l’image. `EXPO_OWNER` et `EXPO_PROJECT_ID` ne servent qu’aux builds de store.
+Le client lit `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_ISSUER_URL`, `EXPO_PUBLIC_CLIENT_ID`. Sans adresse d’API, les appels du site restent sur le même site. L’adresse de l’issuer et l’identifiant de client sont pris à la construction de l’image. Pour le téléphone, l’adresse d’API, l’issuer et l’identifiant de client viennent des secrets du workflow manuel. `EXPO_OWNER` et `EXPO_PROJECT_ID` identifient le projet de build. `EXPO_TOKEN` l’autorise. `EXPO_ASC_APP_ID` n’est exigé que pour soumettre iOS. Le compte de service Android est lié dans EAS. Aucune de ces valeurs n’est dans le dépôt.
 
 Le client chez l’issuer est public, sans secret. Il reconnaît trois retours : le web local, `instacrane` sur le téléphone, et le site public. Le chemin est `/redirect`. Le navigateur doit pouvoir terminer l’échange avec l’issuer depuis l’origine du site.
 
@@ -109,7 +109,9 @@ En local, `docker compose` lance Postgres. Les tests d’images passent par MinI
 - `terraform validate`, sans apply
 - les tests du client : la configuration se charge, les identifiants restent `app.instacrane`, le schéma reste `instacrane`, aucun compte Apple, Google ou Expo dans le dépôt
 
-Les builds de store et la soumission partent de la machine. Sur Android, la première piste est interne. La CI ne les lance pas.
+Un workflow manuel lance les builds téléphone. Il ne part ni à la poussée ni à la pull request. Deux cases : soumettre iOS vers TestFlight, soumettre Android vers la piste interne. Aucune case : build iOS seul, sans soumission. La case Android seule construit Android et le soumet, sans build iOS. Les deux cases construisent les deux et les soumettent. Android n’est pas construit sans sa soumission.
+
+Ce workflow lit `EXPO_TOKEN`, `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_ISSUER_URL`, `EXPO_PROJECT_ID`. `EXPO_PUBLIC_CLIENT_ID` et `EXPO_OWNER` s’y ajoutent. `EXPO_ASC_APP_ID` est exigé quand la case iOS est cochée.
 
 Renovate surveille les bibliothèques. Une zéro-day est prise le jour du correctif. Un correctif ou une mineure, sans faille, est fusionné dès que la CI passe. Une majeure, ou une faille qui n’est pas une zéro-day, attend 30 jours.
 
@@ -129,6 +131,6 @@ Une tranche à la fois.
 6. Signalement et blocage.
 7. Client Expo. Les écrans.
 8. Bascule. L’image Go, la CI, le Terraform du bucket.
-9. Stores. Builds iOS et Android, soumission locale.
-10. Mise en service. L’image sur l’hôte, avec Postgres et le bucket. Le retour du site public chez l’issuer.
+9. Stores. Configuration de build, sans identifiant de compte dans le dépôt.
+10. Mise en service. L’image sur l’hôte, le retour du site chez l’issuer, et le workflow manuel des builds téléphone.
 11. Export. Un zip des données du compte, depuis l’écran des données.
