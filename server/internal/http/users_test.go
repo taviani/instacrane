@@ -68,7 +68,7 @@ func TestUsersMe(t *testing.T) {
 		t.Fatalf("profil absent: %d %s", missing.Code, missing.Body)
 	}
 
-	bad := call(t, handler, http.MethodPatch, "/api/users/me", token("ada-sub", ""), `{"username":"ab"}`)
+	bad := call(t, handler, http.MethodPatch, "/api/users/me", token("ada-sub", ""), `{"username":"a"}`)
 	if bad.Code != http.StatusBadRequest {
 		t.Fatalf("nom court: %d", bad.Code)
 	}

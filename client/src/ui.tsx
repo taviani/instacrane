@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, TextInput, View, type StyleProp, type ViewStyle } from 'react-native';
+import { Image, Modal, Pressable, StyleSheet, Text, TextInput, View, type StyleProp, type ViewStyle } from 'react-native';
 
 export const colors = {
   bg: '#ffffff',
@@ -11,12 +11,26 @@ export const colors = {
   soft: '#f4f4f4',
 };
 
-export function Screen({ children }: { children: ReactNode }) {
-  return <View style={styles.screen}>{children}</View>;
+export function Screen({ children, center }: { children: ReactNode; center?: boolean }) {
+  return <View style={[styles.screen, center ? styles.screenCenter : null]}>{children}</View>;
+}
+
+export function Column({ children }: { children: ReactNode }) {
+  return <View style={styles.column}>{children}</View>;
 }
 
 export function Title({ children }: { children: string }) {
   return <Text style={styles.title}>{children}</Text>;
+}
+
+export function Logo({ size = 88 }: { size?: number }) {
+  return (
+    <Image
+      source={require('../assets/logo.png')}
+      accessibilityLabel="Instacrane"
+      style={{ width: size, height: size }}
+    />
+  );
 }
 
 export function Muted({ children }: { children: ReactNode }) {
@@ -58,21 +72,52 @@ export function Button({
   onPress,
   disabled,
   danger,
+  block,
 }: {
   label: string;
   onPress: () => void;
   disabled?: boolean;
   danger?: boolean;
+  block?: boolean;
 }) {
   return (
     <Pressable
       accessibilityRole="button"
       disabled={disabled}
       onPress={onPress}
-      style={[styles.button, danger ? styles.dangerButton : null, disabled ? styles.disabled : null]}
+      style={[styles.button, block ? styles.buttonBlock : null, danger ? styles.dangerButton : null, disabled ? styles.disabled : null]}
     >
       <Text style={[styles.buttonText, danger ? styles.dangerText : null]}>{label}</Text>
     </Pressable>
+  );
+}
+
+export function ConfirmDialog({
+  visible,
+  message,
+  confirmLabel,
+  onConfirm,
+  onCancel,
+  danger,
+}: {
+  visible: boolean;
+  message: string;
+  confirmLabel: string;
+  onConfirm: () => void;
+  onCancel: () => void;
+  danger?: boolean;
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
+      <View style={styles.backdrop}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Annuler" onPress={onCancel} style={styles.backdropDismiss} />
+        <View style={styles.dialog}>
+          <Text style={styles.dialogText}>{message}</Text>
+          <Button label="Annuler" onPress={onCancel} />
+          <Button label={confirmLabel} danger={danger} onPress={onConfirm} />
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -87,20 +132,22 @@ export function ConfirmButton({
   onConfirm: () => Promise<void> | void;
   danger?: boolean;
 }) {
-  const [armed, setArmed] = useState(false);
+  const [open, setOpen] = useState(false);
   return (
-    <Button
-      label={armed ? confirmLabel : label}
-      danger={danger}
-      onPress={() => {
-        if (!armed) {
-          setArmed(true);
-          return;
-        }
-        setArmed(false);
-        void onConfirm();
-      }}
-    />
+    <>
+      <Button label={label} danger={danger} onPress={() => setOpen(true)} />
+      <ConfirmDialog
+        visible={open}
+        message={label.endsWith('?') ? label : `${label} ?`}
+        confirmLabel={confirmLabel}
+        danger={danger}
+        onCancel={() => setOpen(false)}
+        onConfirm={() => {
+          setOpen(false);
+          void onConfirm();
+        }}
+      />
+    </>
   );
 }
 
@@ -119,6 +166,9 @@ export function box(style?: StyleProp<ViewStyle>) {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: colors.bg, padding: 16, gap: 12 },
+  screenCenter: { justifyContent: 'center', alignItems: 'center' },
+  column: { width: '100%', maxWidth: 280, alignItems: 'center', gap: 16 },
+  buttonBlock: { alignSelf: 'stretch' },
   title: { fontSize: 22, fontWeight: '700', color: colors.text },
   muted: { color: colors.muted, fontSize: 14 },
   error: { color: colors.danger, fontSize: 14 },
@@ -154,6 +204,24 @@ const styles = StyleSheet.create({
     borderColor: '#fff',
     backgroundColor: 'transparent',
   },
+  backdrop: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 24,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+  },
+  backdropDismiss: { position: 'absolute', top: 0, right: 0, bottom: 0, left: 0 },
+  dialog: {
+    width: '100%',
+    maxWidth: 320,
+    backgroundColor: colors.bg,
+    borderRadius: 12,
+    padding: 16,
+    gap: 12,
+    zIndex: 1,
+  },
+  dialogText: { color: colors.text, fontSize: 16 },
   stackFront: {
     position: 'absolute',
     top: 4,

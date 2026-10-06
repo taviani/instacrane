@@ -6,7 +6,7 @@ import { avatarKey } from '../cache';
 import { CachedImage } from '../images';
 import { useSession } from '../session';
 import type { Person } from '../types';
-import { Button, ErrorText, Muted } from '../ui';
+import { Button, ErrorText, Muted, colors } from '../ui';
 
 export default function RequestsScreen() {
   const router = useRouter();
@@ -41,7 +41,7 @@ export default function RequestsScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ padding: 16, gap: 12 }}>
       <ErrorText>{error}</ErrorText>
       {people.length === 0 && !error ? <Muted>Aucune demande en attente.</Muted> : null}
       {people.map((person) => (

@@ -36,7 +36,7 @@ type Deps struct {
 }
 
 var (
-	usernamePattern = regexp.MustCompile(`^[A-Za-z0-9_.]{3,30}$`)
+	usernamePattern = regexp.MustCompile(`^[A-Za-z0-9_.]{2,30}$`)
 	uuidPattern     = regexp.MustCompile(`^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$`)
 )
 

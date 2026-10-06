@@ -22,7 +22,7 @@ func TestMigrateCreatesSpecSchema(t *testing.T) {
 	if err := pool.QueryRow(ctx, `SELECT count(*) FROM schema_migrations`).Scan(&versions); err != nil {
 		t.Fatal(err)
 	}
-	if versions != 3 {
+	if versions != 4 {
 		t.Fatalf("migrations appliquées = %d", versions)
 	}
 
@@ -94,8 +94,11 @@ func TestMigrateCreatesSpecSchema(t *testing.T) {
 	if _, err := pool.Exec(ctx, `INSERT INTO users (sub, username) VALUES ('d', 'ada')`); err == nil {
 		t.Fatal("un nom d'utilisateur dupliqué doit être refusé")
 	}
-	if _, err := pool.Exec(ctx, `INSERT INTO users (sub, username) VALUES ('e', 'ab')`); err == nil {
+	if _, err := pool.Exec(ctx, `INSERT INTO users (sub, username) VALUES ('e', 'a')`); err == nil {
 		t.Fatal("un nom trop court doit être refusé")
+	}
+	if _, err := pool.Exec(ctx, `INSERT INTO users (sub, username) VALUES ('e2', 'ab')`); err != nil {
+		t.Fatal(err)
 	}
 	if _, err := pool.Exec(ctx, `INSERT INTO users (sub, username) VALUES ('f', 'me')`); err == nil {
 		t.Fatal("un nom réservé doit être refusé")

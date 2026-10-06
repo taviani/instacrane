@@ -6,7 +6,7 @@ import { dropPost, photoKey } from '../../cache';
 import { CachedImage } from '../../images';
 import { cursor, placeText } from '../../text';
 import type { Post } from '../../types';
-import { ErrorText, Muted, StackMark, Button } from '../../ui';
+import { ErrorText, Muted, StackMark, Button, colors } from '../../ui';
 
 export default function FeedScreen() {
   const router = useRouter();
@@ -41,6 +41,7 @@ export default function FeedScreen() {
 
   return (
     <FlatList
+      style={{ flex: 1, backgroundColor: colors.bg }}
       data={posts}
       keyExtractor={(item) => item.id}
       refreshing={loading && posts.length === 0}
@@ -49,10 +50,11 @@ export default function FeedScreen() {
         if (!done && !loading && cursorValue) void load(cursorValue, false);
       }}
       ListHeaderComponent={
-        <View style={{ padding: 16, gap: 8 }}>
-          <Text style={{ fontSize: 22, fontWeight: '700' }}>Fil</Text>
-          <ErrorText>{error}</ErrorText>
-        </View>
+        error ? (
+          <View style={{ padding: 16 }}>
+            <ErrorText>{error}</ErrorText>
+          </View>
+        ) : null
       }
       ListEmptyComponent={
         loading ? <ActivityIndicator /> : <View style={{ padding: 16 }}><Muted>Vos publications apparaîtront ici.</Muted></View>

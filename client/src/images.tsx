@@ -4,7 +4,7 @@ import { Image } from 'expo-image';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { cachedUri, dropKey, storeImage } from './cache';
-import { StackMark } from './ui';
+import { StackMark, colors } from './ui';
 
 export function CachedImage({
   name,
@@ -50,7 +50,7 @@ export function CachedImage({
     };
   }, [name, url]);
 
-  if (!uri) return <View style={[style, { backgroundColor: '#f2f2f2' }]} />;
+  if (!uri) return <View style={[style, { backgroundColor: colors.bg, borderWidth: 1, borderColor: colors.line }]} />;
   return <Image source={{ uri }} style={style} contentFit={contentFit} cachePolicy="memory" />;
 }
 

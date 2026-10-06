@@ -1,7 +1,8 @@
 import { createContext, useContext, useEffect, useState, type ReactNode } from 'react';
+import { useRouter } from 'expo-router';
 import { AppState } from 'react-native';
 import { ApiError, api } from './api';
-import { login as beginLogin, refreshSession } from './auth';
+import { completeWebLogin, login as beginLogin, refreshSession } from './auth';
 import type { Note, Owner } from './types';
 import { clearSession, emit, hydrate, readSession, setAlertsAccepted, subscribe } from './vault';
 
@@ -21,6 +22,7 @@ type SessionValue = {
 const SessionContext = createContext<SessionValue | null>(null);
 
 export function SessionProvider({ children }: { children: ReactNode }) {
+  const router = useRouter();
   const [ready, setReady] = useState(false);
   const [token, setToken] = useState<string | null>(null);
   const [me, setMe] = useState<Owner | null>(null);
@@ -67,9 +69,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     });
     void (async () => {
       await hydrate();
+      const webLogin = await completeWebLogin();
       await refreshSession();
       await refreshMe();
       setReady(true);
+      if (webLogin === 'failed') router.replace('/login');
     })();
     const app = AppState.addEventListener('change', (state) => {
       if (state === 'active') {

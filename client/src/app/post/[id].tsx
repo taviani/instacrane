@@ -7,7 +7,7 @@ import { PhotoPager } from '../../images';
 import { useSession } from '../../session';
 import { cursor, placeText, runes } from '../../text';
 import type { Comment, Post } from '../../types';
-import { Button, ConfirmButton, ErrorText, Field, Muted } from '../../ui';
+import { Button, ConfirmButton, ErrorText, Field, Muted, colors } from '../../ui';
 
 export default function PostScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -141,7 +141,7 @@ export default function PostScreen() {
 
   const mine = me?.username === post.author.username;
   return (
-    <ScrollView contentContainerStyle={{ paddingBottom: 24, gap: 12 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ paddingBottom: 24, gap: 12 }}>
       <PhotoPager
         photos={post.photos.map((photo) => ({
           key: photoKey(post.id, photo.position),

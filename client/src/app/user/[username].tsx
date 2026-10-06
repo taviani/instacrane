@@ -1,17 +1,17 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView, Text } from 'react-native';
-import { useLocalSearchParams } from 'expo-router';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { api, message } from '../../api';
 import { avatarKey } from '../../cache';
 import { PhotoGrid } from '../../grid';
 import { CachedImage } from '../../images';
 import { useSession } from '../../session';
 import type { Profile } from '../../types';
-import { Button, ConfirmButton, ErrorText, Muted, Title } from '../../ui';
-import { Link } from 'expo-router';
+import { Button, ConfirmButton, ErrorText, Muted, Title, colors } from '../../ui';
 
 export default function UserScreen() {
   const { username } = useLocalSearchParams<{ username: string }>();
+  const router = useRouter();
   const { me, reloadBell } = useSession();
   const [card, setCard] = useState<Profile | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +33,7 @@ export default function UserScreen() {
 
   if (!card || !username) {
     return (
-      <ScrollView contentContainerStyle={{ padding: 16 }}>
+      <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ padding: 16 }}>
         {error ? <ErrorText>{error}</ErrorText> : <ActivityIndicator />}
       </ScrollView>
     );
@@ -78,16 +78,24 @@ export default function UserScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
-      <CachedImage name={avatarKey(card.username, card.avatar_url)} url={card.avatar_url} style={{ width: 96, height: 96, borderRadius: 48 }} />
+    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ padding: 16, gap: 12 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+        <CachedImage name={avatarKey(card.username, card.avatar_url)} url={card.avatar_url} style={{ width: 96, height: 96, borderRadius: 48 }} />
+        <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-evenly' }}>
+          <Pressable onPress={() => router.push(`/followers/${card.username}`)} style={{ alignItems: 'center', gap: 2 }}>
+            <Text style={{ fontWeight: '700', fontSize: 18 }}>{card.followers_count}</Text>
+            <Text>{card.followers_count === 1 ? 'abonné' : 'abonnés'}</Text>
+          </Pressable>
+          <Pressable onPress={() => router.push(`/following/${card.username}`)} style={{ alignItems: 'center', gap: 2 }}>
+            <Text style={{ fontWeight: '700', fontSize: 18 }}>{card.following_count}</Text>
+            <Text>{card.following_count === 1 ? 'abonnement' : 'abonnements'}</Text>
+          </Pressable>
+        </View>
+      </View>
       <Title>{card.username}</Title>
       {card.display_name ? <Text>{card.display_name}</Text> : null}
       {card.bio ? <Muted>{card.bio}</Muted> : null}
-      <Text>
-        <Link href={`/followers/${card.username}`}>{card.followers_count} abonnés</Link>
-        {' · '}
-        <Link href={`/following/${card.username}`}>{card.following_count} abonnements</Link>
-      </Text>
+      {self ? <Muted>Les autres voient cette fiche. Les photos restent cachées tant que leur demande n’est pas acceptée.</Muted> : null}
       {card.blocked ? <Muted>Vous avez bloqué ce compte.</Muted> : null}
       {card.follow_request === 'pending' ? <Muted>Les photos restent cachées tant que la demande n’est pas acceptée.</Muted> : null}
       <PhotoGrid username={card.username} />
