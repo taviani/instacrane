@@ -8,15 +8,17 @@ Sur le web, la publication arrive, puis la photo reste un cadre vide. L’app t�
 
 - Le bucket reste privé.
 - Il autorise le GET depuis les origines du site, pour que l’app garde le fichier.
-- Ces origines ne sont pas dans le dépôt. Elles sont dans le fichier local déjà ignoré, avec le nom du bucket.
-- `terraform validate` passe.
+- GitHub applique cette description. Le nom du bucket, l’identifiant de projet, les clés et les origines sont des secrets du workflow. Aucune de ces valeurs n’est dans le dépôt.
+- L’état Terraform est dans le stockage d’objets. Si cet état ne connaît pas encore le bucket, le workflow l’adopte, puis applique.
+- `terraform validate` passe. Le déploiement du site n’attend pas cet apply.
 
 ## Où
 
 ```
 infra/main.tf
+.github/workflows/infra.yml
 ```
 
 ## On ne fait pas
 
-Ouvrir le bucket. Changer le client. Appliquer le Terraform : ça reste à la main. Réécrire le plan de la tranche 8.
+Ouvrir le bucket. Changer le client. Laisser l’état sur un ordinateur. Réécrire le plan de la tranche 8.
