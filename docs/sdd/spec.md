@@ -12,7 +12,7 @@ L’application n’a pas d’écran d’inscription. Le compte se crée chez l�
 
 Au premier appel authentifié, l’API crée le profil et recopie l’email du jeton. L’email n’est pas modifiable, et il n’est jamais montré aux autres. Nom affiché, bio et avatar sont locaux.
 
-Le nom d’utilisateur (`^[a-zA-Z0-9_.]+$`, 3 à 30 caractères, unique) se choisit une fois. `me` et `search` sont refusés. Tant qu’il est vide, l’app reste sur l’écran de choix. Publier, commenter, suivre, bloquer et signaler sont refusés. `GET /api/users/me`, le `PATCH` du nom, et aimer restent autorisés.
+Le nom d’utilisateur (`^[a-zA-Z0-9_.]+$`, 2 à 30 caractères, unique) se choisit une fois. `me` et `search` sont refusés. Tant qu’il est vide, l’app reste sur l’écran de choix. Publier, commenter, suivre, bloquer et signaler sont refusés. `GET /api/users/me`, le `PATCH` du nom, et aimer restent autorisés.
 
 Tous les comptes sont privés. Sans session, on ne voit rien. On peut trouver un compte et voir son nom, son avatar et sa bio avant toute acceptation. Ses photos n’apparaissent que si notre demande a été acceptée, ou si c’est nous. Une demande en attente ne les ouvre pas. Une publication invisible se comporte comme si elle n’existait pas, y compris pour aimer ou commenter.
 
