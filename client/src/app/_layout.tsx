@@ -1,26 +1,35 @@
 import 'react-native-gesture-handler';
 import { useEffect } from 'react';
-import { ActivityIndicator, View } from 'react-native';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { ActivityIndicator, View, Platform } from 'react-native';
+import { DefaultTheme, Stack, ThemeProvider, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as WebBrowser from 'expo-web-browser';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SessionProvider, useSession } from '../session';
-import { Button, ErrorText, Screen, Title } from '../ui';
+import { Button, ErrorText, Screen, Title, colors } from '../ui';
 
 WebBrowser.maybeCompleteAuthSession();
 
+const webFrame = Platform.OS === 'web' ? { height: '100vh' as const, overflow: 'hidden' as const } : null;
+
+const theme = {
+  ...DefaultTheme,
+  colors: { ...DefaultTheme.colors, background: colors.bg, card: colors.bg },
+};
+
 export default function RootLayout() {
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <SessionProvider>
-        <StatusBar style="dark" />
-        <View style={{ flex: 1, backgroundColor: '#fff', alignItems: 'center' }}>
-          <View style={{ flex: 1, width: '100%', maxWidth: 480 }}>
-            <Gate />
+    <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>
+      <ThemeProvider value={theme}>
+        <SessionProvider>
+          <StatusBar style="dark" />
+          <View style={[{ flex: 1, backgroundColor: colors.bg, alignItems: 'center' }, webFrame]}>
+            <View style={[{ flex: 1, width: '100%', maxWidth: 480, backgroundColor: colors.bg }, webFrame]}>
+              <Gate />
+            </View>
           </View>
-        </View>
-      </SessionProvider>
+        </SessionProvider>
+      </ThemeProvider>
     </GestureHandlerRootView>
   );
 }
@@ -61,7 +70,14 @@ function Gate() {
     );
   }
   return (
-    <Stack screenOptions={{ headerTintColor: '#111', headerShadowVisible: false }}>
+    <Stack
+      screenOptions={{
+        headerTintColor: '#111',
+        headerShadowVisible: false,
+        headerStyle: { backgroundColor: colors.bg },
+        contentStyle: { backgroundColor: colors.bg },
+      }}
+    >
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="login" options={{ headerShown: false }} />

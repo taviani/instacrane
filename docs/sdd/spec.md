@@ -28,7 +28,7 @@ Le bouton de localisation est éteint. Allumé, une seule source : la position d
 
 L’API répond par un lien signé de quelques minutes. L’app garde le fichier, pas le lien. S’il a expiré, l’API en signe un autre. Si la publication n’est plus visible, l’app retire le fichier.
 
-On peut effacer un commentaire qu’on a écrit, ou un reçu sur sa publication. Quitter la session efface les jetons sur l’appareil et retire le jeton d’alerte.
+On peut effacer un commentaire qu’on a écrit, ou un reçu sur sa publication. Quitter la session efface les jetons sur l’appareil et retire le jeton d’alerte. L’app demande confirmation avant de quitter la session, d’effacer une publication, de bloquer, de signaler ou de supprimer le compte.
 
 ## Notifications
 
@@ -80,7 +80,7 @@ Le fil et la grille demandent 12 publications, 30 au plus, les plus anciennes av
 
 ## Client
 
-Barre du bas : fil, recherche, publication, cloche, profil. Écrans en plus : connexion, choix du nom, détail, listes d’abonnés et d’abonnements, demandes reçues, signalement, blocage, explication des données. Pas d’écran d’inscription. Le web est l’export Expo.
+En haut à gauche : la grue, qui ouvre le fil. En haut à droite : la cloche et publier. Ce bandeau reste visible quand les publications défilent. Barre du bas : recherche, profil. Les fonds sont blancs. L’écran du profil modifie le sien. Le nom et l’avatar y ouvrent la fiche que les autres voient. Sur le profil comme sur la fiche, les compteurs d’abonnés et d’abonnements sont à droite de l’avatar et ouvrent les listes. L’écran de connexion montre la grue, au centre. Écrans en plus : connexion, choix du nom, détail, listes d’abonnés et d’abonnements, demandes reçues, signalement, blocage, explication des données. Pas d’écran d’inscription. Le web est l’export Expo.
 
 ## Hébergement
 

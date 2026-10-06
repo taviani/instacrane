@@ -4,13 +4,15 @@ import * as ImagePicker from 'expo-image-picker';
 import * as Notifications from 'expo-notifications';
 import { useRouter } from 'expo-router';
 import { api, message } from '../../api';
+import { avatarKey } from '../../cache';
 import { PhotoGrid } from '../../grid';
+import { CachedImage } from '../../images';
 import { appendFile, prepareAvatar } from '../../prepare';
 import { useSession } from '../../session';
 import { runes } from '../../text';
-import type { Owner } from '../../types';
+import type { Owner, Profile } from '../../types';
 import { alertsAccepted, setAlertsAccepted } from '../../vault';
-import { Button, ErrorText, Field, Muted, Title } from '../../ui';
+import { Button, ConfirmButton, ErrorText, Field, Muted, Title, colors } from '../../ui';
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -18,6 +20,7 @@ export default function ProfileScreen() {
   const [displayName, setDisplayName] = useState(me?.display_name ?? '');
   const [bio, setBio] = useState(me?.bio ?? '');
   const [alerts, setAlerts] = useState(false);
+  const [counts, setCounts] = useState({ followers: 0, following: 0 });
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -25,6 +28,13 @@ export default function ProfileScreen() {
     setBio(me?.bio ?? '');
     void alertsAccepted().then(setAlerts);
   }, [me]);
+
+  useEffect(() => {
+    if (!me?.username) return;
+    void api<Profile>(`/api/users/${encodeURIComponent(me.username)}`)
+      .then((card) => setCounts({ followers: card.followers_count, following: card.following_count }))
+      .catch(() => undefined);
+  }, [me?.username]);
 
   if (!me?.username) return null;
 
@@ -93,9 +103,30 @@ export default function ProfileScreen() {
     setAlerts(true);
   }
 
+  function openPublic() {
+    router.push(`/user/${me.username}`);
+  }
+
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
-      <Title>{me.username}</Title>
+    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ padding: 16, gap: 12 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 16 }}>
+        <Pressable onPress={openPublic} accessibilityRole="link">
+          <CachedImage name={avatarKey(me.username, me.avatar_url)} url={me.avatar_url} style={{ width: 96, height: 96, borderRadius: 48 }} />
+        </Pressable>
+        <View style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-evenly' }}>
+          <Pressable onPress={() => router.push(`/followers/${me.username}`)} style={{ alignItems: 'center', gap: 2 }}>
+            <Text style={{ fontWeight: '700', fontSize: 18 }}>{counts.followers}</Text>
+            <Text>{counts.followers === 1 ? 'abonné' : 'abonnés'}</Text>
+          </Pressable>
+          <Pressable onPress={() => router.push(`/following/${me.username}`)} style={{ alignItems: 'center', gap: 2 }}>
+            <Text style={{ fontWeight: '700', fontSize: 18 }}>{counts.following}</Text>
+            <Text>{counts.following === 1 ? 'abonnement' : 'abonnements'}</Text>
+          </Pressable>
+        </View>
+      </View>
+      <Pressable onPress={openPublic} accessibilityRole="link">
+        <Title>{me.username}</Title>
+      </Pressable>
       {me.display_name ? <Text>{me.display_name}</Text> : null}
       {me.bio ? <Muted>{me.bio}</Muted> : null}
       <PhotoGrid username={me.username} />
@@ -103,16 +134,12 @@ export default function ProfileScreen() {
       <Field value={bio} onChangeText={setBio} placeholder="Bio" multiline />
       <Button label="Enregistrer le profil" onPress={() => void save()} />
       <Button label="Changer l’avatar" onPress={() => void changeAvatar()} />
-      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-        <Pressable onPress={() => router.push(`/followers/${me.username}`)}><Text>Abonnés</Text></Pressable>
-        <Pressable onPress={() => router.push(`/following/${me.username}`)}><Text>Abonnements</Text></Pressable>
-      </View>
       <Button label="Demandes reçues" onPress={() => router.push('/requests')} />
       <Button label={alerts ? 'Retirer les alertes' : 'Accepter les alertes'} onPress={() => void toggleAlerts(!alerts)} />
       {Platform.OS === 'web' && alerts ? <Muted>Sur le web, accepter n’enregistre pas de jeton d’appareil.</Muted> : null}
       <Button label="Données" onPress={() => router.push('/data')} />
       <ErrorText>{error}</ErrorText>
-      <Button label="Quitter la session" onPress={() => void logout()} />
+      <ConfirmButton label="Quitter la session" confirmLabel="Quitter" onConfirm={logout} />
     </ScrollView>
   );
 }

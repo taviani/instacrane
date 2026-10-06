@@ -5,7 +5,7 @@ import { runes } from '../text';
 import type { Owner } from '../types';
 import { Button, ErrorText, Field, Muted, Screen, Title } from '../ui';
 
-const usernamePattern = /^[A-Za-z0-9_.]{3,30}$/;
+const usernamePattern = /^[A-Za-z0-9_.]{2,30}$/;
 
 export default function UsernameScreen() {
   const { setMe } = useSession();
@@ -19,7 +19,7 @@ export default function UsernameScreen() {
       setError('nom invalide');
       return;
     }
-    if (runes(username) < 3) {
+    if (runes(username) < 2) {
       setError('nom invalide');
       return;
     }
@@ -41,7 +41,7 @@ export default function UsernameScreen() {
   return (
     <Screen>
       <Title>Choisir un nom</Title>
-      <Muted>Il est choisi une fois, de 3 à 30 caractères : lettres, chiffres, point et tiret bas.</Muted>
+      <Muted>Il est choisi une fois, de 2 à 30 caractères : lettres, chiffres, point et tiret bas.</Muted>
       <Field value={name} onChangeText={setName} placeholder="nom" />
       <ErrorText>{error}</ErrorText>
       <Button label={busy ? 'Enregistrement…' : 'Continuer'} disabled={busy} onPress={() => void save()} />

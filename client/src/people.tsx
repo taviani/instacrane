@@ -5,7 +5,7 @@ import { api, message } from './api';
 import { avatarKey } from './cache';
 import { CachedImage } from './images';
 import type { Person } from './types';
-import { ErrorText, Muted } from './ui';
+import { ErrorText, Muted, colors } from './ui';
 
 export function PeopleList({ path }: { path: string }) {
   const router = useRouter();
@@ -19,7 +19,7 @@ export function PeopleList({ path }: { path: string }) {
   }, [path]);
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, gap: 8 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ padding: 16, gap: 8 }}>
       <ErrorText>{error}</ErrorText>
       {people.length === 0 && !error ? <Muted>Aucun compte.</Muted> : null}
       {people.map((person) => (

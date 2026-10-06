@@ -7,7 +7,7 @@ import { api, message } from '../../api';
 import { appendFile, preparePhoto, type Draft } from '../../prepare';
 import { runes } from '../../text';
 import type { Coords, Post } from '../../types';
-import { Button, ErrorText, Field, Muted, Title } from '../../ui';
+import { Button, ErrorText, Field, Muted, Title, colors } from '../../ui';
 
 type Place = Coords & { source: 'now' | 'photo' };
 
@@ -101,7 +101,7 @@ export default function PublishScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
+    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ padding: 16, gap: 12 }}>
       <Title>Publier</Title>
       <Button label="Choisir des photos" onPress={() => void pick()} />
       <ScrollView horizontal contentContainerStyle={{ gap: 8 }}>
