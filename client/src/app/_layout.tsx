@@ -5,6 +5,7 @@ import { DefaultTheme, Stack, ThemeProvider, useRouter, useSegments } from 'expo
 import { StatusBar } from 'expo-status-bar';
 import * as WebBrowser from 'expo-web-browser';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { routeAfterSession } from '../login-return';
 import { SessionProvider, useSession } from '../session';
 import { Button, ErrorText, Screen, Title, colors } from '../ui';
 
@@ -41,16 +42,8 @@ function Gate() {
 
   useEffect(() => {
     if (!ready || offline) return;
-    const top = segments[0];
-    if (!token) {
-      if (top !== 'login' && top !== 'redirect') router.replace('/login');
-      return;
-    }
-    if (!me?.username) {
-      if (top !== 'username') router.replace('/username');
-      return;
-    }
-    if (!top || top === 'login' || top === 'username' || top === 'index') router.replace('/(tabs)/feed');
+    const next = routeAfterSession(segments[0], Boolean(token), Boolean(me?.username));
+    if (next) router.replace(next);
   }, [ready, offline, token, me, segments, router]);
 
   if (!ready) {

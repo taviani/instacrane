@@ -10,6 +10,7 @@ import {
 } from 'expo-auth-session';
 import { Platform } from 'react-native';
 import { config } from './config';
+import { finishIssuerLogin, savePendingLogin, withoutAuthQuery, type PendingLogin } from './login-return';
 import { clearSession, emit, readSession, writeSession, type StoredSession } from './vault';
 
 export type RefreshResult = { ok: true; token: string } | { ok: false; reason: 'network' | 'rejected' };
@@ -24,15 +25,7 @@ type PreparedLogin = {
 let prepared: PreparedLogin | null = null;
 let preparing: Promise<void> | null = null;
 
-const pendingKey = 'instacrane.login';
 const loginErrorKey = 'instacrane.login-error';
-
-type PendingLogin = {
-  verifier: string;
-  state: string;
-  redirectUri: string;
-  clientId: string;
-};
 
 function redirectUri(): string {
   return makeRedirectUri({ scheme: 'instacrane', path: 'redirect' });
@@ -83,48 +76,33 @@ export function takeLoginError(): string | null {
 
 export async function completeWebLogin(): Promise<'ok' | 'failed' | 'none'> {
   if (Platform.OS !== 'web') return 'none';
-  const params = new URLSearchParams(window.location.search);
-  const code = params.get('code');
-  const returnedState = params.get('state');
-  const error = params.get('error');
-  if (!code && !error) return 'none';
-  const raw = sessionStorage.getItem(pendingKey);
-  sessionStorage.removeItem(pendingKey);
-  if (!raw) return 'none';
-  let saved: PendingLogin;
-  try {
-    saved = JSON.parse(raw) as PendingLogin;
-  } catch {
-    sessionStorage.setItem(loginErrorKey, 'connexion interrompue');
-    return 'failed';
-  }
-  if (error || !code || returnedState !== saved.state || !saved.verifier) {
-    sessionStorage.setItem(loginErrorKey, 'connexion interrompue');
-    return 'failed';
+  const search = window.location.search;
+  const params = new URLSearchParams(search);
+  if (params.has('code') || params.has('state') || params.has('error')) {
+    window.history.replaceState(window.history.state, '', withoutAuthQuery(window.location.href));
   }
   const settings = config();
-  if (!settings.issuerUrl) {
-    sessionStorage.setItem(loginErrorKey, 'configuration locale absente');
+  const result = await finishIssuerLogin({
+    search,
+    store: window.localStorage,
+    issuerUrl: settings.issuerUrl ?? '',
+  });
+  if (result.status === 'none') return 'none';
+  if (result.status === 'failed') {
+    sessionStorage.setItem(loginErrorKey, result.reason);
     return 'failed';
   }
-  try {
-    const discovery = await fetchDiscoveryAsync(settings.issuerUrl);
-    const token = await exchangeCodeAsync(
-      {
-        clientId: saved.clientId,
-        code,
-        redirectUri: saved.redirectUri,
-        extraParams: { code_verifier: saved.verifier },
-      },
-      discovery,
-    );
-    await storeToken(token, null);
-    emit();
-    return 'ok';
-  } catch (cause) {
-    sessionStorage.setItem(loginErrorKey, cause instanceof Error ? cause.message : 'connexion interrompue');
-    return 'failed';
-  }
+  await storeToken(
+    {
+      accessToken: result.token.accessToken,
+      refreshToken: result.token.refreshToken,
+      expiresIn: result.token.expiresIn,
+      issuedAt: Math.floor(Date.now() / 1000),
+    },
+    null,
+  );
+  emit();
+  return 'ok';
 }
 
 export async function login(): Promise<boolean> {
@@ -140,7 +118,7 @@ export async function login(): Promise<boolean> {
       redirectUri: current.request.redirectUri,
       clientId: settings.clientId,
     };
-    sessionStorage.setItem(pendingKey, JSON.stringify(pending));
+    savePendingLogin(window.localStorage, pending);
     window.location.assign(current.request.url);
     return true;
   }
@@ -188,7 +166,10 @@ async function runRefresh(): Promise<RefreshResult> {
   }
 }
 
-async function storeToken(token: TokenResponse, previous: StoredSession | null): Promise<void> {
+async function storeToken(
+  token: Pick<TokenResponse, 'accessToken' | 'refreshToken' | 'issuedAt' | 'expiresIn'>,
+  previous: StoredSession | null,
+): Promise<void> {
   await writeSession({
     accessToken: token.accessToken,
     refreshToken: token.refreshToken ?? previous?.refreshToken,
