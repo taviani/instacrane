@@ -1,0 +1,53 @@
+name: Bucket
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - infra/**
+      - .github/workflows/infra.yml
+
+concurrency:
+  group: bucket-apply
+  cancel-in-progress: false
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+
+      - name: Appliquer le bucket
+        working-directory: infra
+        env:
+          SCW_ACCESS_KEY: ${{ secrets.SCW_ACCESS_KEY }}
+          SCW_SECRET_KEY: ${{ secrets.SCW_SECRET_KEY }}
+          SCW_DEFAULT_PROJECT_ID: ${{ secrets.SCW_DEFAULT_PROJECT_ID }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.TF_STATE_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.TF_STATE_SECRET_KEY }}
+          AWS_EC2_METADATA_DISABLED: "true"
+          TF_VAR_bucket_name: ${{ secrets.TF_BUCKET_NAME }}
+          TF_VAR_bucket_read_origins: ${{ secrets.TF_BUCKET_READ_ORIGINS }}
+          TF_STATE_BUCKET: ${{ secrets.TF_STATE_BUCKET }}
+          TF_STATE_ENDPOINT: ${{ secrets.TF_STATE_ENDPOINT }}
+        run: |
+          set -euo pipefail
+          umask 077
+          cat > backend.hcl <<EOF
+          bucket = "${TF_STATE_BUCKET}"
+          endpoints = { s3 = "${TF_STATE_ENDPOINT}" }
+          EOF
+          terraform init -input=false -backend-config=backend.hcl
+          if ! terraform state list | grep -qx 'scaleway_object_bucket.media'; then
+            terraform import scaleway_object_bucket.media "fr-par/${TF_VAR_bucket_name}"
+          fi
+          if ! terraform state list | grep -qx 'scaleway_object_bucket_acl.media'; then
+            terraform import scaleway_object_bucket_acl.media "fr-par/${TF_VAR_bucket_name}"
+          fi
+          terraform apply -input=false -auto-approve
+          rm -f backend.hcl
