@@ -94,7 +94,7 @@ En haut à gauche : la grue, qui ouvre le fil. En haut à droite : la cloche et 
 
 ## Hébergement
 
-L’API, Postgres et le site tournent sur l’hôte déjà choisi. Les images n’y sont pas stockées. Elles vont dans un bucket Scaleway privé, en France, classe standard multi-zones. Le navigateur du site peut y lire un objet, en GET seulement, pour garder le fichier. Le dépôt ne décrit que ce bucket. GitHub l’applique, depuis un workflow. Le nom du bucket, l’identifiant de projet, les clés et les origines de cette lecture sont des secrets de ce workflow. L’état Terraform est hors du dépôt, dans le stockage d’objets. Le déploiement du site n’attend pas cet apply.
+L’API, Postgres et le site tournent sur l’hôte déjà choisi. Les images n’y sont pas stockées. Elles vont dans un bucket Scaleway privé, en France, classe standard multi-zones. Le navigateur du site peut y lire un objet, en GET seulement, pour garder le fichier. Le dépôt ne décrit que ce bucket. GitHub l’applique, depuis un workflow. Le nom du bucket, l’identifiant de projet, les clés et les origines de cette lecture sont des secrets de ce workflow. L’état Terraform est hors du dépôt, dans le stockage d’objets. `terraform validate` tourne dans ce workflow, sans apply et sans secret, seulement quand `infra/` ou ce workflow change. Une pull request ne fait que cette validation. Le déploiement du site n’attend pas cet apply.
 
 L’image contient le binaire Go et l’export web. Elle écoute sur le port 8000. `/api` est l’API. Le reste sert un fichier s’il existe, sinon la page de l’export. Le site et l’API sont sur deux origines. L’origine du site sert l’export. L’origine de l’API ne répond qu’à `/api`. La porte devant le processus fait ce partage et n’est pas dans le dépôt. L’adresse de l’API est reprise dans l’image au moment de la construction. Cette spec ne nomme ni l’hôte, ni ces origines, ni un registre.
 
@@ -120,7 +120,6 @@ En local, `docker compose` lance Postgres et l’API. Postgres n’écoute que s
 
 - les tests Go, Postgres 16 et MinIO
 - la construction de l’image, sans registre
-- `terraform validate`, sans apply
 - les tests du client : la configuration se charge, les identifiants restent `app.instacrane`, le schéma reste `instacrane`, aucun compte Apple, Google ou Expo dans le dépôt
 
 Sur `main`, le déploiement lit `DEPLOY_SSH_KEY`, `DEPLOY_USER`, `DEPLOY_HOST`, `DEPLOY_PATH`. Aucune de ces valeurs n’est dans le dépôt.

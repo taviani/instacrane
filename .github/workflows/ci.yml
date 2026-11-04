@@ -81,22 +81,9 @@ jobs:
           CI: "1"
         run: npm test
 
-  terraform:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: "1.9.8"
-
-      - name: Validate
-        working-directory: infra
-        run: terraform init -backend=false && terraform validate
-
   deploy:
     runs-on: ubuntu-latest
-    needs: [test, image, client, terraform]
+    needs: [test, image, client]
     if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
     concurrency:
       group: deploy

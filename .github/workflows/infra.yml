@@ -7,13 +7,32 @@ on:
     paths:
       - infra/**
       - .github/workflows/infra.yml
+  pull_request:
+    paths:
+      - infra/**
+      - .github/workflows/infra.yml
 
 concurrency:
   group: bucket-apply
   cancel-in-progress: false
 
 jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.9.8"
+
+      - name: Validate
+        working-directory: infra
+        run: terraform init -backend=false && terraform validate
+
   apply:
+    needs: validate
+    if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
