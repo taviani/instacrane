@@ -76,7 +76,10 @@ function Gate() {
       <Stack.Screen name="login" options={{ headerShown: false }} />
       <Stack.Screen name="redirect" options={{ headerShown: false }} />
       <Stack.Screen name="username" options={{ title: 'Nom d’utilisateur', headerBackVisible: false }} />
-      <Stack.Screen name="post/[id]" options={{ title: 'Publication' }} />
+      <Stack.Screen name="post/[id]" options={{ title: 'Commentaires' }} />
+      <Stack.Screen name="likes/[id]" options={{ title: 'J’aime' }} />
+      <Stack.Screen name="settings" options={{ title: 'Réglages' }} />
+      <Stack.Screen name="edit-profile" options={{ title: 'Modifier le profil' }} />
       <Stack.Screen name="user/[username]" options={{ title: 'Profil' }} />
       <Stack.Screen name="followers/[username]" options={{ title: 'Abonnés' }} />
       <Stack.Screen name="following/[username]" options={{ title: 'Abonnements' }} />

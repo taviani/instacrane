@@ -26,6 +26,7 @@ type publicCard struct {
 	person
 	FollowersCount int  `json:"followers_count"`
 	FollowingCount int  `json:"following_count"`
+	PostsCount     int  `json:"posts_count"`
 	Blocked        bool `json:"blocked"`
 }
 
@@ -121,11 +122,12 @@ func (deps Deps) publicProfile(w http.ResponseWriter, r *http.Request) {
 		SELECT u.username, u.display_name, u.bio, u.avatar_key,
 		       (SELECT count(*) FROM follows WHERE following_sub = u.sub AND status = 'accepted'),
 		       (SELECT count(*) FROM follows WHERE follower_sub = u.sub AND status = 'accepted'),
+		       (SELECT count(*) FROM posts WHERE author_sub = u.sub),
 		       COALESCE((SELECT status FROM follows WHERE follower_sub = $2 AND following_sub = u.sub), 'none'),
 		       EXISTS (SELECT 1 FROM blocks WHERE blocker_sub = $2 AND blocked_sub = u.sub)
 		FROM users u
 		WHERE u.username = $1
-	`, username, session.Sub).Scan(&card.Username, &card.DisplayName, &card.Bio, &key, &card.FollowersCount, &card.FollowingCount, &card.FollowRequest, &card.Blocked)
+	`, username, session.Sub).Scan(&card.Username, &card.DisplayName, &card.Bio, &key, &card.FollowersCount, &card.FollowingCount, &card.PostsCount, &card.FollowRequest, &card.Blocked)
 	if errors.Is(err, pgx.ErrNoRows) {
 		writeError(w, http.StatusNotFound, "profil introuvable")
 		return
@@ -177,6 +179,7 @@ func (deps Deps) searchUsers(w http.ResponseWriter, r *http.Request) {
 		  AND (
 		    u.username ILIKE $1 ESCAPE '!'
 		    OR u.display_name ILIKE $1 ESCAPE '!'
+		    OR u.bio ILIKE $1 ESCAPE '!'
 		  )
 		ORDER BY u.username
 		LIMIT 20
@@ -205,7 +208,12 @@ func (deps Deps) searchUsers(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "profil indisponible")
 		return
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"users": cards})
+	posts, err := deps.searchVisiblePosts(r.Context(), session.Sub, likeContains(query))
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "profil indisponible")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"users": cards, "posts": posts})
 }
 
 func likeContains(value string) string {

@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 import { Tabs, useRouter } from 'expo-router';
 import { BellIcon, PlusIcon, ProfileIcon, SearchIcon } from '../../icons';
+import { PublishMenu } from '../../publish-menu';
+import { stageDrafts } from '../../publish-draft';
 import { useSession } from '../../session';
 import { colors, Logo } from '../../ui';
 
@@ -54,11 +57,20 @@ function CraneMark() {
 
 function TopActions({ marked }: { marked: boolean }) {
   const router = useRouter();
+  const [menu, setMenu] = useState(false);
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 18 }}>
-      <Pressable accessibilityRole="button" accessibilityLabel="Publier" onPress={() => router.push('/publish')}>
+      <Pressable accessibilityRole="button" accessibilityLabel="Publier" onPress={() => setMenu(true)}>
         <PlusIcon />
       </Pressable>
+      <PublishMenu
+        visible={menu}
+        onClose={() => setMenu(false)}
+        onPicked={(photos) => {
+          stageDrafts(photos);
+          router.push('/publish');
+        }}
+      />
       <Pressable accessibilityRole="button" accessibilityLabel="Cloche" onPress={() => router.push('/bell')}>
         <BellIcon />
         {marked ? (

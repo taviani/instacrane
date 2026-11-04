@@ -22,7 +22,13 @@ func (deps Deps) feed(w http.ResponseWriter, r *http.Request) {
 		       u.username, u.display_name, u.avatar_key,
 		       (SELECT count(*) FROM likes WHERE post_id = p.id),
 		       (SELECT count(*) FROM comments WHERE post_id = p.id),
-		       EXISTS (SELECT 1 FROM likes WHERE post_id = p.id AND user_sub = $1)
+		       EXISTS (SELECT 1 FROM likes WHERE post_id = p.id AND user_sub = $1),
+		       (SELECT c.body FROM comments c JOIN users cu ON cu.sub = c.author_sub
+		         WHERE c.post_id = p.id AND cu.username IS NOT NULL
+		         ORDER BY c.created_at ASC, c.id ASC LIMIT 1),
+		       (SELECT cu.username FROM comments c JOIN users cu ON cu.sub = c.author_sub
+		         WHERE c.post_id = p.id AND cu.username IS NOT NULL
+		         ORDER BY c.created_at ASC, c.id ASC LIMIT 1)
 		FROM posts p
 		JOIN users u ON u.sub = p.author_sub
 		WHERE (
@@ -98,7 +104,13 @@ func (deps Deps) readPost(ctx context.Context, viewer, id string, withComments b
 		       u.username, u.display_name, u.avatar_key,
 		       (SELECT count(*) FROM likes WHERE post_id = p.id),
 		       (SELECT count(*) FROM comments WHERE post_id = p.id),
-		       EXISTS (SELECT 1 FROM likes WHERE post_id = p.id AND user_sub = $2)
+		       EXISTS (SELECT 1 FROM likes WHERE post_id = p.id AND user_sub = $2),
+		       (SELECT c.body FROM comments c JOIN users cu ON cu.sub = c.author_sub
+		         WHERE c.post_id = p.id AND cu.username IS NOT NULL
+		         ORDER BY c.created_at ASC, c.id ASC LIMIT 1),
+		       (SELECT cu.username FROM comments c JOIN users cu ON cu.sub = c.author_sub
+		         WHERE c.post_id = p.id AND cu.username IS NOT NULL
+		         ORDER BY c.created_at ASC, c.id ASC LIMIT 1)
 		FROM posts p
 		JOIN users u ON u.sub = p.author_sub
 		WHERE p.id = $1
@@ -144,6 +156,7 @@ func scanPost(row pgx.Row) (postView, *string, error) {
 		&view.ID, &view.Caption, &view.Latitude, &view.Longitude, &view.CreatedAt,
 		&username, &view.Author.DisplayName, &avatar,
 		&view.LikesCount, &view.CommentsCount, &view.Liked,
+		&view.PreviewBody, &view.PreviewUsername,
 	)
 	if err != nil {
 		return postView{}, nil, err
@@ -187,4 +200,92 @@ func (deps Deps) attachPhotos(ctx context.Context, view *postView) error {
 	}
 	view.Photos = photos
 	return nil
+}
+
+func (deps Deps) searchVisiblePosts(ctx context.Context, viewer, pattern string) ([]postView, error) {
+	rows, err := deps.Pool.Query(ctx, `
+		SELECT p.id, p.caption, p.latitude, p.longitude, p.created_at,
+		       u.username, u.display_name, u.avatar_key,
+		       (SELECT count(*) FROM likes WHERE post_id = p.id),
+		       (SELECT count(*) FROM comments WHERE post_id = p.id),
+		       EXISTS (SELECT 1 FROM likes WHERE post_id = p.id AND user_sub = $1),
+		       (SELECT c.body FROM comments c JOIN users cu ON cu.sub = c.author_sub
+		         WHERE c.post_id = p.id AND cu.username IS NOT NULL
+		         ORDER BY c.created_at ASC, c.id ASC LIMIT 1),
+		       (SELECT cu.username FROM comments c JOIN users cu ON cu.sub = c.author_sub
+		         WHERE c.post_id = p.id AND cu.username IS NOT NULL
+		         ORDER BY c.created_at ASC, c.id ASC LIMIT 1)
+		FROM posts p
+		JOIN users u ON u.sub = p.author_sub
+		WHERE p.caption ILIKE $2 ESCAPE '!'
+		  AND (
+		    p.author_sub = $1
+		    OR (
+		      EXISTS (
+		        SELECT 1 FROM follows
+		        WHERE follower_sub = $1 AND following_sub = p.author_sub AND status = 'accepted'
+		      )
+		      AND NOT EXISTS (
+		        SELECT 1 FROM blocks
+		        WHERE blocker_sub = p.author_sub AND blocked_sub = $1
+		      )
+		    )
+		  )
+		ORDER BY p.created_at DESC, p.id DESC
+		LIMIT 20
+	`, viewer, pattern)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	posts := []postView{}
+	for rows.Next() {
+		view, avatarKey, err := scanPost(rows)
+		if err != nil {
+			return nil, err
+		}
+		view.Author.AvatarURL, err = deps.signed(ctx, avatarKey)
+		if err != nil {
+			return nil, err
+		}
+		if err := deps.attachPhotos(ctx, &view); err != nil {
+			return nil, err
+		}
+		posts = append(posts, view)
+	}
+	return posts, rows.Err()
+}
+
+func (deps Deps) listLikes(w http.ResponseWriter, r *http.Request) {
+	session, ok := deps.session(w, r)
+	if !ok {
+		return
+	}
+	if _, err := deps.readPost(r.Context(), session.Sub, r.PathValue("id"), false); err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			writeError(w, http.StatusNotFound, "publication introuvable")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, "publication indisponible")
+		return
+	}
+	rows, err := deps.Pool.Query(r.Context(), `
+		SELECT u.username, u.display_name, u.bio, u.avatar_key
+		FROM likes l
+		JOIN users u ON u.sub = l.user_sub
+		WHERE l.post_id = $1 AND u.username IS NOT NULL
+		ORDER BY l.created_at DESC, u.username
+		LIMIT 100
+	`, r.PathValue("id"))
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "publication indisponible")
+		return
+	}
+	defer rows.Close()
+	cards, err := deps.cards(r, rows)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "publication indisponible")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"users": cards})
 }

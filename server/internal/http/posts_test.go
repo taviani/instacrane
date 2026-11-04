@@ -69,6 +69,23 @@ func TestPublications(t *testing.T) {
 		t.Fatalf("publication: %d %#v", created.Code, created.Body)
 	}
 	paulID, _ := created.Body["id"].(string)
+	noted := call(t, handler, http.MethodPatch, "/api/posts/"+paulID, token("paul"), `{"caption":"ensuite"}`)
+	if noted.Code != http.StatusOK || noted.Body["caption"] != "ensuite" {
+		t.Fatalf("légende après: %d %#v", noted.Code, noted.Body)
+	}
+	if call(t, handler, http.MethodPatch, "/api/posts/"+paulID, token("virginie"), `{"caption":"non"}`).Code != http.StatusNotFound {
+		t.Fatal("un autre modifie la légende")
+	}
+	placed := call(t, handler, http.MethodPatch, "/api/posts/"+paulID, token("paul"), `{"latitude":48.8,"longitude":2.3}`)
+	if placed.Code != http.StatusOK || placed.Body["latitude"] != 48.8 {
+		t.Fatalf("position après: %#v", placed.Body)
+	}
+	if call(t, handler, http.MethodPatch, "/api/posts/"+paulID, token("paul"), `{"latitude":48.8}`).Code != http.StatusBadRequest {
+		t.Fatal("une seule coordonnée doit être refusée")
+	}
+	if call(t, handler, http.MethodPatch, "/api/posts/"+paulID, token("paul"), `{"caption":"bonjour"}`).Code != http.StatusOK {
+		t.Fatal("légende remise")
+	}
 	if created.Body["caption"] != "bonjour" || created.Body["latitude"] != 48.8 {
 		t.Fatalf("champs: %#v", created.Body)
 	}
@@ -143,13 +160,35 @@ func TestPublications(t *testing.T) {
 	if err := pool.QueryRow(ctx, `SELECT count(*) FROM likes`).Scan(&likes); err != nil || likes != 1 {
 		t.Fatalf("lignes de like = %d", likes)
 	}
+	if call(t, handler, http.MethodPost, "/api/posts/"+paulID+"/like", token("paul"), "").Code != http.StatusCreated {
+		t.Fatal("like de l'auteur")
+	}
+	if _, err := pool.Exec(ctx, `UPDATE likes SET created_at = $2 WHERE post_id = $1 AND user_sub = $3`, paulID, time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), "virginie"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := pool.Exec(ctx, `UPDATE likes SET created_at = $2 WHERE post_id = $1 AND user_sub = $3`, paulID, time.Date(2026, 1, 2, 0, 0, 0, 0, time.UTC), "paul"); err != nil {
+		t.Fatal(err)
+	}
+	likers := call(t, handler, http.MethodGet, "/api/posts/"+paulID+"/likes", token("virginie"), "")
+	who, _ := likers.Body["users"].([]any)
+	if likers.Code != http.StatusOK || len(who) != 2 {
+		t.Fatalf("qui a aimé: %#v", likers.Body)
+	}
+	first, _ := who[0].(map[string]any)
+	second, _ := who[1].(map[string]any)
+	if first["username"] != "paul" || second["username"] != "virginie" {
+		t.Fatalf("ordre: %#v", who)
+	}
+	if call(t, handler, http.MethodGet, "/api/posts/"+virginieID+"/likes", token("paul"), "").Code != http.StatusNotFound {
+		t.Fatal("les likes d'une publication invisible")
+	}
 	comment := call(t, handler, http.MethodPost, "/api/posts/"+paulID+"/comments", token("virginie"), `{"body":"vu"}`)
 	if comment.Code != http.StatusCreated {
 		t.Fatalf("commentaire: %d %#v", comment.Code, comment.Body)
 	}
 	commentID, _ := comment.Body["id"].(string)
 	detail := call(t, handler, http.MethodGet, "/api/posts/"+paulID, token("virginie"), "")
-	if detail.Body["comments_count"] != float64(1) || detail.Body["caption"] != "bonjour" {
+	if detail.Body["comments_count"] != float64(1) || detail.Body["caption"] != "bonjour" || detail.Body["preview_body"] != "vu" || detail.Body["preview_username"] != "virginie" {
 		t.Fatalf("détail: %#v", detail.Body)
 	}
 	if call(t, handler, http.MethodPost, "/api/posts/"+paulID+"/comments", token("sans-nom"), `{"body":"non"}`).Code != http.StatusForbidden {

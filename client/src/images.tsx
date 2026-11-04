@@ -4,6 +4,7 @@ import { Image } from 'expo-image';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
 import { cachedUri, dropKey, storeImage } from './cache';
+import { HeartIcon } from './icons';
 import { StackMark, colors } from './ui';
 
 export function CachedImage({
@@ -62,16 +63,41 @@ export function PhotoPager({
   onLike: () => void;
 }) {
   const [width, setWidth] = useState(0);
+  const [heart, setHeart] = useState(false);
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function liked() {
+    setHeart(true);
+    onLike();
+    if (timer.current) clearTimeout(timer.current);
+    timer.current = setTimeout(() => setHeart(false), 700);
+  }
+
+  useEffect(() => () => {
+    if (timer.current) clearTimeout(timer.current);
+  }, []);
+
   return (
     <View onLayout={(event) => setWidth(event.nativeEvent.layout.width)}>
-      <ScrollView horizontal pagingEnabled showsHorizontalScrollIndicator={false} style={{ width: width || '100%' }}>
+      <ScrollView
+        horizontal
+        pagingEnabled
+        directionalLockEnabled
+        showsHorizontalScrollIndicator={false}
+        style={{ width: width || '100%' }}
+      >
         {photos.map((photo) => (
-          <Zoomable key={photo.key} width={width} onLike={onLike}>
+          <Zoomable key={photo.key} width={width} onLike={liked}>
             <CachedImage name={photo.key} url={photo.url} renew={photo.renew} style={{ width: width || '100%', aspectRatio: 4 / 5 }} />
           </Zoomable>
         ))}
       </ScrollView>
       {photos.length > 1 ? <StackMark /> : null}
+      {heart ? (
+        <View pointerEvents="none" style={{ position: 'absolute', top: 0, right: 0, bottom: 0, left: 0, alignItems: 'center', justifyContent: 'center' }}>
+          <HeartIcon color="#ffffff" size={88} filled />
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -93,7 +119,7 @@ function Zoomable({ children, onLike }: { children: ReactNode; width: number; on
     });
   const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   return (
-    <GestureDetector gesture={Gesture.Simultaneous(pinch, tap)}>
+    <GestureDetector gesture={Gesture.Simultaneous(Gesture.Native(), pinch, tap)}>
       <Animated.View style={style}>{children}</Animated.View>
     </GestureDetector>
   );
