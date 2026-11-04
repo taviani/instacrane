@@ -109,6 +109,9 @@ func TestProfilesAndFollows(t *testing.T) {
 	if card.Body["followers_count"] != float64(0) {
 		t.Fatalf("compteur: %#v", card.Body["followers_count"])
 	}
+	if card.Body["posts_count"] != float64(0) {
+		t.Fatalf("publications: %#v", card.Body["posts_count"])
+	}
 
 	stranger := call(t, handler, http.MethodPost, "/api/users/virginie/follow/accept", token("virginie"), "")
 	if stranger.Code != http.StatusNotFound {
@@ -138,6 +141,17 @@ func TestProfilesAndFollows(t *testing.T) {
 
 	insertPost(t, pool, "paul", "10000000-0000-4000-8000-000000000001", time.Date(2026, 1, 2, 0, 0, 0, 0, time.UTC), 2)
 	insertPost(t, pool, "paul", "10000000-0000-4000-8000-000000000002", time.Date(2026, 1, 1, 0, 0, 0, 0, time.UTC), 1)
+	if _, err := pool.Exec(ctx, `UPDATE posts SET caption = 'atelier' WHERE id = $1`, "10000000-0000-4000-8000-000000000001"); err != nil {
+		t.Fatal(err)
+	}
+	counted := call(t, handler, http.MethodGet, "/api/users/paul", token("virginie"), "")
+	if counted.Body["posts_count"] != float64(2) {
+		t.Fatalf("publications: %#v", counted.Body["posts_count"])
+	}
+	visible := call(t, handler, http.MethodGet, "/api/users/search/atelier", token("virginie"), "")
+	if visible.Code != http.StatusOK || len(postsOf(t, visible)) != 1 {
+		t.Fatalf("légende visible: %#v", visible.Body)
+	}
 	page := call(t, handler, http.MethodGet, "/api/users/paul/posts?limit=1", token("virginie"), "")
 	got := postsOf(t, page)
 	if len(got) != 1 || got[0]["id"] != "10000000-0000-4000-8000-000000000001" || got[0]["photo_count"] != float64(2) {
@@ -173,6 +187,14 @@ func TestProfilesAndFollows(t *testing.T) {
 	if len(postsOf(t, call(t, handler, http.MethodGet, "/api/users/paul/posts", token("virginie"), ""))) != 0 {
 		t.Fatal("les photos restent visibles après désabonnement")
 	}
+	hiddenCard := call(t, handler, http.MethodGet, "/api/users/paul", token("virginie"), "")
+	if hiddenCard.Body["posts_count"] != float64(2) {
+		t.Fatalf("le compteur reste: %#v", hiddenCard.Body["posts_count"])
+	}
+	hiddenSearch := call(t, handler, http.MethodGet, "/api/users/search/atelier", token("virginie"), "")
+	if len(postsOf(t, hiddenSearch)) != 0 {
+		t.Fatalf("légende cachée: %#v", hiddenSearch.Body)
+	}
 
 	found := call(t, handler, http.MethodGet, "/api/users/search/Paul", token("virginie"), "")
 	people, _ := found.Body["users"].([]any)
@@ -183,9 +205,14 @@ func TestProfilesAndFollows(t *testing.T) {
 	if person["email"] != nil || person["username"] != "paul" {
 		t.Fatalf("résultat: %#v", person)
 	}
+	byBio := call(t, handler, http.MethodGet, "/api/users/search/photos", token("paul"), "")
+	bioPeople, _ := byBio.Body["users"].([]any)
+	if byBio.Code != http.StatusOK || len(bioPeople) != 1 {
+		t.Fatalf("bio: %#v", byBio.Body)
+	}
 	wild := call(t, handler, http.MethodGet, "/api/users/search/%25", token("virginie"), "")
 	nobody, _ := wild.Body["users"].([]any)
-	if len(nobody) != 0 {
+	if len(nobody) != 0 || len(postsOf(t, wild)) != 0 {
 		t.Fatalf("joker: %#v", wild.Body)
 	}
 }

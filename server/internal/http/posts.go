@@ -1,6 +1,9 @@
 package api
 
 import (
+	"bytes"
+	"encoding/json"
+	"errors"
 	"io"
 	"math"
 	"mime/multipart"
@@ -10,6 +13,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/taviani/instacrane/server/internal/auth"
 	"github.com/taviani/instacrane/server/internal/media"
 )
@@ -41,17 +45,19 @@ type commentView struct {
 }
 
 type postView struct {
-	ID            string        `json:"id"`
-	CreatedAt     time.Time     `json:"created_at"`
-	Caption       *string       `json:"caption"`
-	Latitude      *float64      `json:"latitude"`
-	Longitude     *float64      `json:"longitude"`
-	Author        authorView    `json:"author"`
-	Photos        []photoView   `json:"photos"`
-	LikesCount    int           `json:"likes_count"`
-	CommentsCount int           `json:"comments_count"`
-	Liked         bool          `json:"liked"`
-	Comments      []commentView `json:"comments,omitempty"`
+	ID              string        `json:"id"`
+	CreatedAt       time.Time     `json:"created_at"`
+	Caption         *string       `json:"caption"`
+	Latitude        *float64      `json:"latitude"`
+	Longitude       *float64      `json:"longitude"`
+	Author          authorView    `json:"author"`
+	Photos          []photoView   `json:"photos"`
+	LikesCount      int           `json:"likes_count"`
+	CommentsCount   int           `json:"comments_count"`
+	Liked           bool          `json:"liked"`
+	PreviewBody     *string       `json:"preview_body,omitempty"`
+	PreviewUsername *string       `json:"preview_username,omitempty"`
+	Comments        []commentView `json:"comments,omitempty"`
 }
 
 func (deps Deps) createPost(w http.ResponseWriter, r *http.Request) {
@@ -146,6 +152,108 @@ func (deps Deps) createPost(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusCreated, view)
+}
+
+func (deps Deps) patchPost(w http.ResponseWriter, r *http.Request) {
+	session, ok := deps.session(w, r)
+	if !ok {
+		return
+	}
+	id := r.PathValue("id")
+	if !uuidPattern.MatchString(id) {
+		writeError(w, http.StatusNotFound, "publication introuvable")
+		return
+	}
+	raw, err := io.ReadAll(http.MaxBytesReader(w, r.Body, 8192))
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "corps invalide")
+		return
+	}
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(raw, &fields); err != nil || len(fields) == 0 {
+		writeError(w, http.StatusBadRequest, "corps invalide")
+		return
+	}
+	for key := range fields {
+		if key != "caption" && key != "latitude" && key != "longitude" {
+			writeError(w, http.StatusBadRequest, "corps invalide")
+			return
+		}
+	}
+	setCaption := false
+	var caption *string
+	if value, ok := fields["caption"]; ok {
+		var text string
+		if err := json.Unmarshal(value, &text); err != nil {
+			writeError(w, http.StatusBadRequest, "légende invalide")
+			return
+		}
+		text = strings.TrimSpace(text)
+		if utf8.RuneCountInString(text) > maxCaption {
+			writeError(w, http.StatusBadRequest, "légende invalide")
+			return
+		}
+		if text != "" {
+			caption = &text
+		}
+		setCaption = true
+	}
+	_, hasLat := fields["latitude"]
+	_, hasLon := fields["longitude"]
+	if hasLat != hasLon {
+		writeError(w, http.StatusBadRequest, "position invalide")
+		return
+	}
+	var latitude, longitude *float64
+	if hasLat {
+		latitude, ok = jsonCoord(w, fields["latitude"], -90, 90)
+		if !ok {
+			return
+		}
+		longitude, ok = jsonCoord(w, fields["longitude"], -180, 180)
+		if !ok {
+			return
+		}
+		if (latitude == nil) != (longitude == nil) {
+			writeError(w, http.StatusBadRequest, "position invalide")
+			return
+		}
+	}
+	var updated string
+	err = deps.Pool.QueryRow(r.Context(), `
+		UPDATE posts SET
+			caption = CASE WHEN $3 THEN $4 ELSE caption END,
+			latitude = CASE WHEN $5 THEN $6 ELSE latitude END,
+			longitude = CASE WHEN $5 THEN $7 ELSE longitude END
+		WHERE id = $1 AND author_sub = $2
+		RETURNING id
+	`, id, session.Sub, setCaption, caption, hasLat, latitude, longitude).Scan(&updated)
+	if errors.Is(err, pgx.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "publication introuvable")
+		return
+	}
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "publication indisponible")
+		return
+	}
+	view, err := deps.readPost(r.Context(), session.Sub, id, false)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "publication indisponible")
+		return
+	}
+	writeJSON(w, http.StatusOK, view)
+}
+
+func jsonCoord(w http.ResponseWriter, raw json.RawMessage, low, high float64) (*float64, bool) {
+	if bytes.Equal(bytes.TrimSpace(raw), []byte("null")) {
+		return nil, true
+	}
+	var value float64
+	if err := json.Unmarshal(raw, &value); err != nil || math.IsNaN(value) || math.IsInf(value, 0) || value < low || value > high {
+		writeError(w, http.StatusBadRequest, "position invalide")
+		return nil, false
+	}
+	return &value, true
 }
 
 func readPostForm(w http.ResponseWriter, r *http.Request) (*string, *float64, *float64, []*multipart.FileHeader, bool) {

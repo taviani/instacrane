@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { View } from 'react-native';
 import { ApiError, api, message } from './api';
 import { dropPost, thumbKey } from './cache';
 import { CachedImage } from './images';
@@ -9,7 +8,6 @@ import type { GridPost, Post } from './types';
 import { ErrorText, Muted, StackMark, Button } from './ui';
 
 export function PhotoGrid({ username }: { username: string }) {
-  const router = useRouter();
   const [posts, setPosts] = useState<GridPost[]>([]);
   const [cursorValue, setCursorValue] = useState<string | null>(null);
   const [done, setDone] = useState(false);
@@ -46,7 +44,7 @@ export function PhotoGrid({ username }: { username: string }) {
       <ErrorText>{error}</ErrorText>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap' }}>
         {posts.map((item) => (
-          <Pressable key={item.id} onPress={() => router.push(`/post/${item.id}`)} style={{ width: '33.33%', aspectRatio: 1, padding: 1 }}>
+          <View key={item.id} style={{ width: '33.33%', aspectRatio: 1, padding: 1 }}>
             <CachedImage
               name={thumbKey(item.id)}
               url={item.thumbnail_url}
@@ -54,7 +52,7 @@ export function PhotoGrid({ username }: { username: string }) {
               style={{ width: '100%', height: '100%' }}
             />
             {item.photo_count > 1 ? <StackMark /> : null}
-          </Pressable>
+          </View>
         ))}
       </View>
       {!done && cursorValue ? <Button label="Plus anciennes" onPress={() => void load(cursorValue, false)} /> : null}
