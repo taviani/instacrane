@@ -19,6 +19,7 @@ export type Person = {
 export type Profile = Person & {
   followers_count: number;
   following_count: number;
+  posts_count: number;
   blocked: boolean;
 };
 
@@ -50,6 +51,8 @@ export type Post = {
   likes_count: number;
   comments_count: number;
   liked: boolean;
+  preview_body?: string | null;
+  preview_username?: string | null;
   comments?: Comment[];
 };
 

@@ -1,15 +1,13 @@
-import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, FlatList, Pressable, Text, View } from 'react-native';
-import { useRouter } from 'expo-router';
-import { ApiError, api, message } from '../../api';
-import { dropPost, photoKey } from '../../cache';
-import { CachedImage } from '../../images';
-import { cursor, placeText } from '../../text';
+import { useCallback, useState } from 'react';
+import { ActivityIndicator, FlatList, View } from 'react-native';
+import { useFocusEffect } from 'expo-router';
+import { api, message } from '../../api';
+import { PostCard } from '../../post-card';
+import { cursor } from '../../text';
 import type { Post } from '../../types';
-import { ErrorText, Muted, StackMark, Button, colors } from '../../ui';
+import { ErrorText, Muted, Button, colors } from '../../ui';
 
 export default function FeedScreen() {
-  const router = useRouter();
   const [posts, setPosts] = useState<Post[]>([]);
   const [cursorValue, setCursorValue] = useState<string | null>(null);
   const [done, setDone] = useState(false);
@@ -35,9 +33,9 @@ export default function FeedScreen() {
     }
   }, []);
 
-  useEffect(() => {
+  useFocusEffect(useCallback(() => {
     void load(null, true);
-  }, [load]);
+  }, [load]));
 
   return (
     <FlatList
@@ -67,38 +65,12 @@ export default function FeedScreen() {
         ) : null
       }
       renderItem={({ item }) => (
-        <Pressable onPress={() => router.push(`/post/${item.id}`)} style={{ paddingBottom: 20 }}>
-          <View>
-            <CachedImage
-              name={photoKey(item.id, item.photos[0]?.position ?? 1)}
-              url={item.photos[0]?.url}
-              renew={() => renewPhoto(item.id, item.photos[0]?.position ?? 1)}
-              style={{ width: '100%', aspectRatio: 4 / 5 }}
-            />
-            {item.photos.length > 1 ? <StackMark /> : null}
-          </View>
-          <View style={{ paddingHorizontal: 16, paddingTop: 8, gap: 4 }}>
-            <Text style={{ fontWeight: '700' }}>{item.author.username}</Text>
-            {item.caption ? <Text>{item.caption}</Text> : null}
-            {item.latitude != null && item.longitude != null ? (
-              <Muted>{placeText(item.latitude, item.longitude)}</Muted>
-            ) : null}
-            <Muted>
-              {item.likes_count} j’aime · {item.comments_count} commentaire{item.comments_count === 1 ? '' : 's'}
-            </Muted>
-          </View>
-        </Pressable>
+        <PostCard
+          post={item}
+          onChange={(next) => setPosts((current) => current.map((post) => (post.id === next.id ? next : post)))}
+          onGone={() => setPosts((current) => current.filter((post) => post.id !== item.id))}
+        />
       )}
     />
   );
-}
-
-async function renewPhoto(id: string, position: number): Promise<string | null> {
-  try {
-    const post = await api<Post>(`/api/posts/${id}`);
-    return post.photos.find((photo) => photo.position === position)?.url ?? null;
-  } catch (error) {
-    if (error instanceof ApiError && error.status === 404) await dropPost(id);
-    return null;
-  }
 }

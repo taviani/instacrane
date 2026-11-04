@@ -22,7 +22,7 @@ func TestMigrateCreatesSpecSchema(t *testing.T) {
 	if err := pool.QueryRow(ctx, `SELECT count(*) FROM schema_migrations`).Scan(&versions); err != nil {
 		t.Fatal(err)
 	}
-	if versions != 4 {
+	if versions != 5 {
 		t.Fatalf("migrations appliquées = %d", versions)
 	}
 
@@ -75,7 +75,7 @@ func TestMigrateCreatesSpecSchema(t *testing.T) {
 	assertColumns(t, ctx, pool, "posts", []string{"id", "author_sub", "caption", "created_at", "latitude", "longitude"})
 	assertColumns(t, ctx, pool, "post_photos", []string{"post_id", "position", "display_key", "thumbnail_key"})
 	assertColumns(t, ctx, pool, "comments", []string{"id", "author_sub", "post_id", "body", "created_at"})
-	assertColumns(t, ctx, pool, "likes", []string{"user_sub", "post_id"})
+	assertColumns(t, ctx, pool, "likes", []string{"user_sub", "post_id", "created_at"})
 	assertColumns(t, ctx, pool, "notifications", []string{
 		"id", "recipient_sub", "actor_sub", "type", "post_id", "created_at", "is_read",
 	})
