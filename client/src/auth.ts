@@ -28,7 +28,11 @@ let preparing: Promise<void> | null = null;
 const loginErrorKey = 'instacrane.login-error';
 
 function redirectUri(): string {
-  return makeRedirectUri({ scheme: 'instacrane', path: 'redirect' });
+  return makeRedirectUri({
+    scheme: 'instacrane',
+    path: 'redirect',
+    native: 'instacrane://redirect',
+  });
 }
 
 export function prepareLogin(): Promise<void> {
