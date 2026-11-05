@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, ScrollView } from 'react-native';
+import { ActivityIndicator, ScrollView, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { api, message } from '../../api';
-import { PhotoGrid } from '../../grid';
 import { ProfileHead } from '../../profile-head';
+import { ProfileViewBar, ProfileViewBody, type ProfileView } from '../../profile-posts';
 import { useSession } from '../../session';
 import type { Profile } from '../../types';
 import { Button, ConfirmButton, ErrorText, Muted, colors } from '../../ui';
@@ -14,6 +14,7 @@ export default function UserScreen() {
   const [card, setCard] = useState<Profile | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
+  const [view, setView] = useState<ProfileView>('grid');
 
   const load = useCallback(async () => {
     if (!username) return;
@@ -76,12 +77,16 @@ export default function UserScreen() {
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ padding: 16, gap: 12 }}>
-      <ProfileHead card={card} />
-      {self ? <Muted>Les autres voient cette fiche. Les photos restent cachées tant que leur demande n’est pas acceptée.</Muted> : null}
-      {card.blocked ? <Muted>Vous avez bloqué ce compte.</Muted> : null}
-      {card.follow_request === 'pending' ? <Muted>Les photos restent cachées tant que la demande n’est pas acceptée.</Muted> : null}
-      <PhotoGrid username={card.username} />
+    <ScrollView stickyHeaderIndices={[1]} style={{ flex: 1, backgroundColor: colors.bg }}>
+      <View style={{ padding: 16, gap: 12 }}>
+        <ProfileHead card={card} />
+        {self ? <Muted>Les autres voient cette fiche. Les photos restent cachées tant que leur demande n’est pas acceptée.</Muted> : null}
+        {card.blocked ? <Muted>Vous avez bloqué ce compte.</Muted> : null}
+        {card.follow_request === 'pending' ? <Muted>Les photos restent cachées tant que la demande n’est pas acceptée.</Muted> : null}
+      </View>
+      <ProfileViewBar mode={view} onChange={setView} />
+      <ProfileViewBody username={card.username} mode={view} />
+      <View style={{ padding: 16, gap: 12 }}>
       {!self && card.follow_request === 'none' ? <Button label="Demander à suivre" onPress={() => void follow()} /> : null}
       {!self && card.follow_request === 'pending' ? <Button label="Annuler la demande" onPress={() => void unfollow()} /> : null}
       {!self && card.follow_request === 'accepted' ? <Button label="Ne plus suivre" onPress={() => void unfollow()} /> : null}
@@ -97,6 +102,7 @@ export default function UserScreen() {
       {!self ? <ConfirmButton label="Signaler le compte" confirmLabel="Confirmer le signalement" onConfirm={report} /> : null}
       <ErrorText>{error}</ErrorText>
       {notice ? <Muted>{notice}</Muted> : null}
+      </View>
     </ScrollView>
   );
 }

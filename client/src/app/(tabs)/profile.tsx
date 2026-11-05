@@ -1,9 +1,9 @@
 import { useEffect, useLayoutEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, View } from 'react-native';
 import { useNavigation, useRouter } from 'expo-router';
 import { api } from '../../api';
-import { PhotoGrid } from '../../grid';
 import { GearIcon } from '../../icons';
+import { ProfileViewBar, ProfileViewBody, type ProfileView } from '../../profile-posts';
 import { ProfileHead } from '../../profile-head';
 import { useSession } from '../../session';
 import type { Profile } from '../../types';
@@ -14,6 +14,7 @@ export default function ProfileScreen() {
   const router = useRouter();
   const navigation = useNavigation();
   const [card, setCard] = useState<Profile | null>(null);
+  const [view, setView] = useState<ProfileView>('grid');
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -42,9 +43,12 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ padding: 16, gap: 12 }}>
-      <ProfileHead card={card} />
-      <PhotoGrid username={me.username} />
+    <ScrollView stickyHeaderIndices={[1]} style={{ flex: 1, backgroundColor: colors.bg }}>
+      <View style={{ padding: 16 }}>
+        <ProfileHead card={card} />
+      </View>
+      <ProfileViewBar mode={view} onChange={setView} />
+      <ProfileViewBody username={me.username} mode={view} />
     </ScrollView>
   );
 }
