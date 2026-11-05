@@ -255,6 +255,18 @@ func (deps Deps) userPosts(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "profil indisponible")
 		return
 	}
+	if r.URL.Query().Has("full") {
+		if r.URL.Query().Get("full") != "1" {
+			writeError(w, http.StatusBadRequest, "page invalide")
+			return
+		}
+		if !visible {
+			writeJSON(w, http.StatusOK, map[string]any{"posts": []postView{}})
+			return
+		}
+		deps.writeAuthorPosts(w, r, session.Sub, author)
+		return
+	}
 	if !visible {
 		writeJSON(w, http.StatusOK, map[string]any{"posts": []postItem{}})
 		return
@@ -292,6 +304,60 @@ func (deps Deps) userPosts(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		posts = append(posts, item)
+	}
+	if err := rows.Err(); err != nil {
+		writeError(w, http.StatusInternalServerError, "profil indisponible")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"posts": posts})
+}
+
+func (deps Deps) writeAuthorPosts(w http.ResponseWriter, r *http.Request, viewer, author string) {
+	limit, beforeAt, beforeID, ok := postPage(w, r)
+	if !ok {
+		return
+	}
+	rows, err := deps.Pool.Query(r.Context(), `
+		SELECT p.id, p.caption, p.latitude, p.longitude, p.created_at,
+		       u.username, u.display_name, u.avatar_key,
+		       (SELECT count(*) FROM likes WHERE post_id = p.id),
+		       (SELECT count(*) FROM comments WHERE post_id = p.id),
+		       EXISTS (SELECT 1 FROM likes WHERE post_id = p.id AND user_sub = $2),
+		       (SELECT c.body FROM comments c JOIN users cu ON cu.sub = c.author_sub
+		         WHERE c.post_id = p.id AND cu.username IS NOT NULL
+		         ORDER BY c.created_at ASC, c.id ASC LIMIT 1),
+		       (SELECT cu.username FROM comments c JOIN users cu ON cu.sub = c.author_sub
+		         WHERE c.post_id = p.id AND cu.username IS NOT NULL
+		         ORDER BY c.created_at ASC, c.id ASC LIMIT 1)
+		FROM posts p
+		JOIN users u ON u.sub = p.author_sub
+		WHERE p.author_sub = $1
+		  AND ($3::timestamptz IS NULL OR (p.created_at, p.id) < ($3, $4::uuid))
+		ORDER BY p.created_at DESC, p.id DESC
+		LIMIT $5
+	`, author, viewer, beforeAt, beforeID, limit)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "profil indisponible")
+		return
+	}
+	defer rows.Close()
+	posts := []postView{}
+	for rows.Next() {
+		view, avatarKey, err := scanPost(rows)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "profil indisponible")
+			return
+		}
+		view.Author.AvatarURL, err = deps.signed(r.Context(), avatarKey)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, "profil indisponible")
+			return
+		}
+		if err := deps.attachPhotos(r.Context(), &view); err != nil {
+			writeError(w, http.StatusInternalServerError, "profil indisponible")
+			return
+		}
+		posts = append(posts, view)
 	}
 	if err := rows.Err(); err != nil {
 		writeError(w, http.StatusInternalServerError, "profil indisponible")

@@ -47,11 +47,13 @@ export function Field({
   onChangeText,
   placeholder,
   multiline,
+  autoCapitalize = 'none',
 }: {
   value: string;
   onChangeText: (value: string) => void;
   placeholder: string;
   multiline?: boolean;
+  autoCapitalize?: 'none' | 'sentences' | 'words' | 'characters';
 }) {
   return (
     <TextInput
@@ -59,7 +61,7 @@ export function Field({
       onChangeText={onChangeText}
       placeholder={placeholder}
       placeholderTextColor={colors.muted}
-      autoCapitalize="none"
+      autoCapitalize={autoCapitalize}
       autoCorrect={false}
       multiline={multiline}
       style={[styles.field, multiline ? styles.fieldMulti : null]}

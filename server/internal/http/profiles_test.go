@@ -164,6 +164,18 @@ func TestProfilesAndFollows(t *testing.T) {
 	if thumb == "" {
 		t.Fatalf("miniature: %#v", got[0])
 	}
+	full := call(t, handler, http.MethodGet, "/api/users/paul/posts?full=1&limit=1", token("virginie"), "")
+	shown := postsOf(t, full)
+	if full.Code != http.StatusOK || len(shown) != 1 || shown[0]["caption"] != "atelier" {
+		t.Fatalf("suite: %#v", full.Body)
+	}
+	photos, _ := shown[0]["photos"].([]any)
+	if len(photos) != 2 {
+		t.Fatalf("suite: %#v", full.Body)
+	}
+	if _, ok := shown[0]["thumbnail_key"]; ok {
+		t.Fatal("la clé de miniature ne doit pas sortir")
+	}
 	older := call(t, handler, http.MethodGet, "/api/users/paul/posts?limit=1&before="+url.QueryEscape(got[0]["created_at"].(string)+"|10000000-0000-4000-8000-000000000001"), token("virginie"), "")
 	rest := postsOf(t, older)
 	if len(rest) != 1 || rest[0]["id"] != "10000000-0000-4000-8000-000000000002" {
@@ -186,6 +198,9 @@ func TestProfilesAndFollows(t *testing.T) {
 	}
 	if len(postsOf(t, call(t, handler, http.MethodGet, "/api/users/paul/posts", token("virginie"), ""))) != 0 {
 		t.Fatal("les photos restent visibles après désabonnement")
+	}
+	if len(postsOf(t, call(t, handler, http.MethodGet, "/api/users/paul/posts?full=1", token("virginie"), ""))) != 0 {
+		t.Fatal("la suite reste visible après désabonnement")
 	}
 	hiddenCard := call(t, handler, http.MethodGet, "/api/users/paul", token("virginie"), "")
 	if hiddenCard.Body["posts_count"] != float64(2) {
