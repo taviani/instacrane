@@ -94,6 +94,33 @@ export function Button({
   );
 }
 
+export function ChoiceDialog({
+  visible,
+  choices,
+  onCancel,
+  children,
+}: {
+  visible: boolean;
+  choices: { label: string; onPress: () => void; danger?: boolean }[];
+  onCancel: () => void;
+  children?: ReactNode;
+}) {
+  return (
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
+      <View style={styles.backdrop}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Annuler" onPress={onCancel} style={styles.backdropDismiss} />
+        <View style={styles.dialog}>
+          {children}
+          {choices.map((choice) => (
+            <Button key={choice.label} label={choice.label} danger={choice.danger} onPress={choice.onPress} />
+          ))}
+          <Button label="Annuler" onPress={onCancel} />
+        </View>
+      </View>
+    </Modal>
+  );
+}
+
 export function ConfirmDialog({
   visible,
   message,

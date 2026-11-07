@@ -1,9 +1,11 @@
 import { Platform } from 'react-native';
+import { File } from 'expo-file-system';
 import { SaveFormat, manipulateAsync, type Action } from 'expo-image-manipulator';
 import type { ImagePickerAsset } from 'expo-image-picker';
 import { avatarActions, portraitActions, type Frame } from './crop';
 import { fromExif, readJpegGps } from './gps';
 import type { Coords } from './types';
+import { photoPart } from './upload-part';
 
 export type Draft = {
   uri: string;
@@ -33,7 +35,9 @@ export async function appendFile(form: FormData, uri: string): Promise<void> {
     form.append('file', blob, 'photo.jpg');
     return;
   }
-  form.append('file', { uri, name: 'photo.jpg', type: 'image/jpeg' } as never);
+  // Le fetch du téléphone lit bytes(), pas une adresse { uri }.
+  const file = new File(uri);
+  form.append('file', photoPart(await file.bytes()) as never);
 }
 
 async function gpsFromUri(uri: string): Promise<Coords | null> {

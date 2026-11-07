@@ -4,6 +4,7 @@ import { Directory, File, Paths } from 'expo-file-system';
 
 const sessionKey = 'instacrane.session';
 const alertsKey = 'instacrane.alerts';
+const resumeKey = 'instacrane.resume';
 
 export type StoredSession = {
   accessToken: string;
@@ -55,6 +56,18 @@ export async function alertsAccepted(): Promise<boolean> {
 export async function setAlertsAccepted(accepted: boolean): Promise<void> {
   if (accepted) await writeValue(alertsKey, '1');
   else await deleteValue(alertsKey);
+}
+
+export async function readResume(): Promise<string | null> {
+  return readValue(resumeKey);
+}
+
+export async function writeResume(path: string): Promise<void> {
+  await writeValue(resumeKey, path);
+}
+
+export async function clearResume(): Promise<void> {
+  await deleteValue(resumeKey);
 }
 
 function parseSession(raw: string | null): StoredSession | null {
