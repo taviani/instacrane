@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Keyboard, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ApiError, api, message } from '../../api';
 import { dropPost } from '../../cache';
+import { useKeyboardLift } from '../../keyboard';
 import { useSession } from '../../session';
 import { cursor, runes } from '../../text';
 import type { Comment, Post } from '../../types';
@@ -13,25 +14,12 @@ export default function CommentsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { me, reloadBell } = useSession();
   const insets = useSafeAreaInsets();
+  const lift = useKeyboardLift();
   const [post, setPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [missing, setMissing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [body, setBody] = useState('');
-  const [keyboard, setKeyboard] = useState(0);
-
-  useEffect(() => {
-    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
-    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
-    const show = Keyboard.addListener(showEvent, (event) => {
-      setKeyboard(event.endCoordinates.height);
-    });
-    const hide = Keyboard.addListener(hideEvent, () => setKeyboard(0));
-    return () => {
-      show.remove();
-      hide.remove();
-    };
-  }, []);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -114,8 +102,7 @@ export default function CommentsScreen() {
   }
 
   const mine = me?.username === post.author.username;
-  // iOS : padding = hauteur du clavier pour coller le composer dessus. Android redimensionne déjà la fenêtre.
-  const composerPad = Platform.OS === 'ios' && keyboard > 0 ? keyboard : Math.max(insets.bottom, 12);
+  const composerPad = lift > 0 ? lift : Math.max(insets.bottom, 12);
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>

@@ -1,12 +1,13 @@
 import { useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { api, message } from '../../api';
 import { avatarKey } from '../../cache';
 import { CachedImage } from '../../images';
+import { KeyboardScroll } from '../../keyboard-scroll';
 import { PostCard } from '../../post-card';
 import type { Person, Post } from '../../types';
-import { Button, ErrorText, Field, Muted, colors } from '../../ui';
+import { Button, ErrorText, Field, Muted } from '../../ui';
 
 export default function SearchScreen() {
   const router = useRouter();
@@ -31,7 +32,7 @@ export default function SearchScreen() {
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ padding: 16, gap: 12 }}>
+    <KeyboardScroll>
       <Field value={query} onChangeText={setQuery} placeholder="Nom, bio ou légende" />
       <Button label="Chercher" onPress={() => void search()} />
       <ErrorText>{error}</ErrorText>
@@ -53,6 +54,6 @@ export default function SearchScreen() {
           onGone={() => setPosts((current) => current.filter((post) => post.id !== item.id))}
         />
       ))}
-    </ScrollView>
+    </KeyboardScroll>
   );
 }
