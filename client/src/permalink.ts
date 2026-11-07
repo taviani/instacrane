@@ -17,6 +17,13 @@ export function publicationPermalink(origin: string, id: string): string | null 
   }
 }
 
+/** Lien natif qui rouvre l’app, même forme que `instacrane://redirect`. */
+export function publicationAppLink(id: string): string | null {
+  const path = publicationPath(id);
+  if (!path) return null;
+  return `instacrane://${path.slice(1)}`;
+}
+
 export function publicationResume(path: string | null): string | null {
   if (!path) return null;
   const id = path.startsWith('/publication/') ? path.slice('/publication/'.length) : '';

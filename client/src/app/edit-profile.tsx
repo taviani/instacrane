@@ -1,13 +1,13 @@
 import { useState } from 'react';
-import { ScrollView } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { api, message } from '../api';
+import { KeyboardScroll } from '../keyboard-scroll';
 import { appendFile, prepareAvatar } from '../prepare';
 import { useSession } from '../session';
 import { runes } from '../text';
 import type { Owner } from '../types';
-import { Button, ErrorText, Field, colors } from '../ui';
+import { Button, ErrorText, Field } from '../ui';
 
 export default function EditProfileScreen() {
   const { me, setMe } = useSession();
@@ -54,12 +54,12 @@ export default function EditProfileScreen() {
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ padding: 16, gap: 12 }}>
+    <KeyboardScroll>
       <Field value={displayName} onChangeText={setDisplayName} placeholder="Nom affiché" autoCapitalize="words" />
       <Field value={bio} onChangeText={setBio} placeholder="Bio" multiline autoCapitalize="sentences" />
       <Button label={busy ? 'Enregistrement…' : 'Enregistrer le profil'} disabled={busy} onPress={() => void save()} />
       <Button label="Changer l’avatar" onPress={() => void changeAvatar()} />
       <ErrorText>{error}</ErrorText>
-    </ScrollView>
+    </KeyboardScroll>
   );
 }

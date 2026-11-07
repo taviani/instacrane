@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { Platform, Pressable, Share, Text, View } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
-import * as Linking from 'expo-linking';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import { ApiError, api, message } from './api';
 import { dropPost, photoKey } from './cache';
 import { BubbleIcon, HeartIcon } from './icons';
 import { PhotoPager } from './images';
-import { publicationPath } from './permalink';
+import { config } from './config';
+import { publicationPermalink } from './permalink';
 import { photoPlaceFor } from './publish-draft';
 import { useSession } from './session';
 import { ago, placeText, runes } from './text';
@@ -132,8 +132,11 @@ export function PostCard({
       setError('Lien indisponible.');
       return;
     }
+    // iOS n’affiche pas la feuille de partage tant qu’un Modal se ferme.
+    await new Promise((resolve) => setTimeout(resolve, 350));
     try {
-      await Share.share(Platform.OS === 'ios' ? { url } : { message: url });
+      // Un schéma custom n’est pas un `url` partageable ; le texte suffit partout.
+      await Share.share(Platform.OS === 'ios' && /^https?:/i.test(url) ? { url } : { message: url });
     } catch {
       setError('Partage indisponible.');
     }
@@ -218,7 +221,8 @@ export function PostCard({
                   label: 'Accéder à cette publication',
                   onPress: () => {
                     setMenu(false);
-                    router.push(`/publication/${post.id}`);
+                    // Laisser le menu se fermer avant de naviguer (iOS + Modal).
+                    setTimeout(() => router.push(`/publication/${post.id}`), 100);
                   },
                 },
               ]
@@ -287,9 +291,10 @@ export function PostCard({
 }
 
 function linkFor(id: string): string | null {
-  const path = publicationPath(id);
-  if (!path) return null;
-  return Linking.createURL(path) || null;
+  const origin =
+    config().siteUrl ||
+    (Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.origin : '');
+  return publicationPermalink(origin, id);
 }
 
 async function renewPhoto(id: string, position: number): Promise<string | null> {

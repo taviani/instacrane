@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ApiError, api, message } from '../../api';
 import { dropPost } from '../../cache';
+import { useKeyboardLift } from '../../keyboard';
 import { useSession } from '../../session';
 import { cursor, runes } from '../../text';
 import type { Comment, Post } from '../../types';
@@ -11,6 +13,8 @@ import { Button, ErrorText, Field, Muted, colors } from '../../ui';
 export default function CommentsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { me, reloadBell } = useSession();
+  const insets = useSafeAreaInsets();
+  const lift = useKeyboardLift();
   const [post, setPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [missing, setMissing] = useState(false);
@@ -98,9 +102,16 @@ export default function CommentsScreen() {
   }
 
   const mine = me?.username === post.author.username;
+  const composerPad = lift > 0 ? lift : Math.max(insets.bottom, 12);
+
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: 16, gap: 12, flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
+      >
         {comments.map((comment) => (
           <View key={comment.id} style={{ gap: 4 }}>
             <Text>
@@ -118,8 +129,18 @@ export default function CommentsScreen() {
         {comments.length < post.comments_count ? <Button label="Commentaires suivants" onPress={() => void moreComments()} /> : null}
         <ErrorText>{error}</ErrorText>
       </ScrollView>
-      <View style={{ padding: 16, gap: 8, borderTopWidth: 1, borderTopColor: colors.line }}>
-        <Field value={body} onChangeText={setBody} placeholder="Commentaire" />
+      <View
+        style={{
+          paddingHorizontal: 16,
+          paddingTop: 12,
+          paddingBottom: composerPad,
+          gap: 8,
+          borderTopWidth: 1,
+          borderTopColor: colors.line,
+          backgroundColor: colors.bg,
+        }}
+      >
+        <Field value={body} onChangeText={setBody} placeholder="Commentaire" multiline autoCapitalize="sentences" />
         <Button label="Envoyer" onPress={() => void sendComment()} />
       </View>
     </View>

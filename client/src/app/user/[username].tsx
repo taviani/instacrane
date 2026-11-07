@@ -4,6 +4,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { api, message } from '../../api';
 import { ProfileHead } from '../../profile-head';
 import { ProfileViewBar, ProfileViewBody, type ProfileView } from '../../profile-posts';
+import { useProfileScrollMemory } from '../../profile-scroll';
 import { useSession } from '../../session';
 import type { Profile } from '../../types';
 import { Button, ConfirmButton, ErrorText, Muted, colors } from '../../ui';
@@ -15,6 +16,7 @@ export default function UserScreen() {
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const [view, setView] = useState<ProfileView>('grid');
+  const scroll = useProfileScrollMemory(username ? `user:${username}` : 'user', view, setView);
 
   const load = useCallback(async () => {
     if (!username) return;
@@ -77,7 +79,14 @@ export default function UserScreen() {
   }
 
   return (
-    <ScrollView stickyHeaderIndices={[1]} style={{ flex: 1, backgroundColor: colors.bg }}>
+    <ScrollView
+      ref={scroll.ref}
+      stickyHeaderIndices={[1]}
+      style={{ flex: 1, backgroundColor: colors.bg }}
+      onScroll={scroll.onScroll}
+      onContentSizeChange={scroll.onContentSizeChange}
+      scrollEventThrottle={scroll.scrollEventThrottle}
+    >
       <View style={{ padding: 16, gap: 12 }}>
         <ProfileHead card={card} />
         {self ? <Muted>Les autres voient cette fiche. Les photos restent cachées tant que leur demande n’est pas acceptée.</Muted> : null}

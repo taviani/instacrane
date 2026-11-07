@@ -3,12 +3,13 @@ import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import { api, message } from '../../api';
+import { KeyboardScroll } from '../../keyboard-scroll';
 import { openPublishPicker } from '../../publish-menu';
 import { rememberPhotoPlace, subscribeDrafts, takeDrafts } from '../../publish-draft';
 import { appendFile, type Draft } from '../../prepare';
 import { placeText, runes } from '../../text';
 import type { Coords, Post } from '../../types';
-import { Button, ErrorText, Field, Muted, Title, colors } from '../../ui';
+import { Button, ErrorText, Field, Muted, Title } from '../../ui';
 
 export default function PublishScreen() {
   const router = useRouter();
@@ -65,7 +66,7 @@ export default function PublishScreen() {
   }
 
   return (
-    <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ padding: 16, gap: 12 }}>
+    <KeyboardScroll>
       <Title>Publier</Title>
       <Button
         label="Ajouter"
@@ -97,7 +98,7 @@ export default function PublishScreen() {
       )}
       <ErrorText>{error}</ErrorText>
       <Button label={busy ? 'Envoi…' : 'Publier'} disabled={busy} onPress={() => void publish()} />
-    </ScrollView>
+    </KeyboardScroll>
   );
 
   async function useHere() {

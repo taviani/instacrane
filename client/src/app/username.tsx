@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { api, message } from '../api';
+import { KeyboardScroll } from '../keyboard-scroll';
 import { useSession } from '../session';
 import { runes } from '../text';
 import type { Owner } from '../types';
-import { Button, ErrorText, Field, Muted, Screen, Title } from '../ui';
+import { Button, ErrorText, Field, Muted, Title } from '../ui';
 
 const usernamePattern = /^[A-Za-z0-9_.]{2,30}$/;
 
@@ -39,12 +40,12 @@ export default function UsernameScreen() {
   }
 
   return (
-    <Screen>
+    <KeyboardScroll contentContainerStyle={{ flexGrow: 1, justifyContent: 'center' }}>
       <Title>Choisir un nom</Title>
       <Muted>Il est choisi une fois, de 2 à 30 caractères : lettres, chiffres, point et tiret bas.</Muted>
       <Field value={name} onChangeText={setName} placeholder="nom" />
       <ErrorText>{error}</ErrorText>
       <Button label={busy ? 'Enregistrement…' : 'Continuer'} disabled={busy} onPress={() => void save()} />
-    </Screen>
+    </KeyboardScroll>
   );
 }

@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from 'react';
 import { Image, Modal, Pressable, StyleSheet, Text, TextInput, View, type StyleProp, type ViewStyle } from 'react-native';
+import { useKeyboardLift } from './keyboard';
 
 export const colors = {
   bg: '#ffffff',
@@ -105,9 +106,10 @@ export function ChoiceDialog({
   onCancel: () => void;
   children?: ReactNode;
 }) {
+  const lift = useKeyboardLift();
   return (
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
-      <View style={styles.backdrop}>
+      <View style={[styles.backdrop, lift > 0 ? { paddingBottom: lift } : null]}>
         <Pressable accessibilityRole="button" accessibilityLabel="Annuler" onPress={onCancel} style={styles.backdropDismiss} />
         <View style={styles.dialog}>
           {children}
