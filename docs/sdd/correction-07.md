@@ -8,19 +8,23 @@ Les trois points proposent d’ouvrir la publication, de copier son lien, ou de 
 
 - Tout le monde voit ces trois choix. L’auteur garde modifier et supprimer. Les autres gardent signaler, avec confirmation.
 - La page montre la publication comme dans le fil. La flèche revient en arrière, ou au fil si la page a été ouverte par le lien.
-- Copier met l’adresse dans le presse-papiers. Partager ouvre le menu du système.
-- Sur le site, l’adresse est celle du site. Sur le téléphone, elle rouvre l’application sur cette publication.
+- Copier met l’adresse https du site dans le presse-papiers. Partager ouvre le menu du système avec la même adresse.
+- Sur un téléphone dans le navigateur, la page propose d’ouvrir l’app ou de l’installer (si l’adresse du store est configurée), ou de rester sur le site.
 - Sans session, le lien mène à la connexion, puis à cette publication. Une publication invisible reste introuvable.
+- L’origine du site et les adresses de store viennent de la configuration locale / des secrets, pas du dépôt.
 
 ## Où
 
 ```
 client/src/permalink.ts
 client/src/post-card.tsx
+client/src/app-invite.ts
+client/src/open-app-banner.tsx
 client/src/app/publication/[id].tsx
 client/src/app/_layout.tsx
+client/src/config.ts
 ```
 
 ## On ne fait pas
 
-Ouvrir cette page en appuyant sur la photo du fil. Rendre une publication visible sans session. Réécrire le plan de la tranche 13.
+Ouvrir cette page en appuyant sur la photo du fil. Rendre une publication visible sans session. Les Universal Links Apple/Google. Réécrire le plan de la tranche 13.

@@ -7,7 +7,8 @@ import { ApiError, api, message } from './api';
 import { dropPost, photoKey } from './cache';
 import { BubbleIcon, HeartIcon } from './icons';
 import { PhotoPager } from './images';
-import { publicationAppLink, publicationPermalink } from './permalink';
+import { config } from './config';
+import { publicationPermalink } from './permalink';
 import { photoPlaceFor } from './publish-draft';
 import { useSession } from './session';
 import { ago, placeText, runes } from './text';
@@ -290,11 +291,10 @@ export function PostCard({
 }
 
 function linkFor(id: string): string | null {
-  if (Platform.OS === 'web') {
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    return publicationPermalink(origin, id);
-  }
-  return publicationAppLink(id);
+  const origin =
+    config().siteUrl ||
+    (Platform.OS === 'web' && typeof window !== 'undefined' ? window.location.origin : '');
+  return publicationPermalink(origin, id);
 }
 
 async function renewPhoto(id: string, position: number): Promise<string | null> {

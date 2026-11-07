@@ -31,11 +31,12 @@ jobs:
           EXPO_PUBLIC_API_URL: ${{ secrets.EXPO_PUBLIC_API_URL }}
           EXPO_PUBLIC_ISSUER_URL: ${{ secrets.EXPO_PUBLIC_ISSUER_URL }}
           EXPO_PUBLIC_CLIENT_ID: ${{ secrets.EXPO_PUBLIC_CLIENT_ID }}
+          EXPO_PUBLIC_SITE_URL: ${{ secrets.EXPO_PUBLIC_SITE_URL }}
           EXPO_PROJECT_ID: ${{ secrets.EXPO_PROJECT_ID }}
           EXPO_OWNER: ${{ secrets.EXPO_OWNER }}
         run: |
           missing=0
-          for name in EXPO_TOKEN EXPO_PUBLIC_API_URL EXPO_PUBLIC_ISSUER_URL EXPO_PUBLIC_CLIENT_ID EXPO_PROJECT_ID EXPO_OWNER; do
+          for name in EXPO_TOKEN EXPO_PUBLIC_API_URL EXPO_PUBLIC_ISSUER_URL EXPO_PUBLIC_CLIENT_ID EXPO_PUBLIC_SITE_URL EXPO_PROJECT_ID EXPO_OWNER; do
             if [ -z "${!name}" ]; then
               echo "::error::Secret $name absent"
               missing=1
@@ -57,6 +58,9 @@ jobs:
           EXPO_PUBLIC_API_URL: ${{ secrets.EXPO_PUBLIC_API_URL }}
           EXPO_PUBLIC_ISSUER_URL: ${{ secrets.EXPO_PUBLIC_ISSUER_URL }}
           EXPO_PUBLIC_CLIENT_ID: ${{ secrets.EXPO_PUBLIC_CLIENT_ID }}
+          EXPO_PUBLIC_SITE_URL: ${{ secrets.EXPO_PUBLIC_SITE_URL }}
+          EXPO_PUBLIC_IOS_STORE_URL: ${{ secrets.EXPO_PUBLIC_IOS_STORE_URL }}
+          EXPO_PUBLIC_ANDROID_STORE_URL: ${{ secrets.EXPO_PUBLIC_ANDROID_STORE_URL }}
           EXPO_ASC_APP_ID: ${{ secrets.EXPO_ASC_APP_ID }}
         run: |
           node <<'NODE'
@@ -65,12 +69,18 @@ jobs:
           const apiUrl = process.env.EXPO_PUBLIC_API_URL;
           const issuerUrl = process.env.EXPO_PUBLIC_ISSUER_URL;
           const clientId = process.env.EXPO_PUBLIC_CLIENT_ID;
+          const siteUrl = process.env.EXPO_PUBLIC_SITE_URL;
+          const iosStoreUrl = process.env.EXPO_PUBLIC_IOS_STORE_URL;
+          const androidStoreUrl = process.env.EXPO_PUBLIC_ANDROID_STORE_URL;
           for (const name of Object.keys(eas.build || {})) {
             eas.build[name].env = {
               ...(eas.build[name].env || {}),
               EXPO_PUBLIC_API_URL: apiUrl,
               EXPO_PUBLIC_ISSUER_URL: issuerUrl,
               EXPO_PUBLIC_CLIENT_ID: clientId,
+              EXPO_PUBLIC_SITE_URL: siteUrl,
+              ...(iosStoreUrl ? { EXPO_PUBLIC_IOS_STORE_URL: iosStoreUrl } : {}),
+              ...(androidStoreUrl ? { EXPO_PUBLIC_ANDROID_STORE_URL: androidStoreUrl } : {}),
             };
           }
           const ascAppId = process.env.EXPO_ASC_APP_ID;
