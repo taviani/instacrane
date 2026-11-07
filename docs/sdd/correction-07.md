@@ -2,7 +2,7 @@
 
 Plan. Le produit reste celui de `spec.md`. Ce n’est pas une nouvelle tranche.
 
-Les trois points proposent d’ouvrir la publication, de copier son lien, ou de le partager. La page a une flèche de retour en haut à gauche. Un appui sur une case de la grille ouvre cette page. Le fil et la suite du profil ne l’ouvrent pas d’eux-mêmes.
+Les trois points proposent d’ouvrir la publication, de copier son lien, ou de le partager. La page a une flèche de retour en haut à gauche. Un appui sur une case de la grille ouvre cette page ; le retour retrouve la grille à l’endroit où l’on était. Le fil et la suite du profil ne l’ouvrent pas d’eux-mêmes.
 
 ## Fait quand
 
@@ -19,6 +19,7 @@ Les trois points proposent d’ouvrir la publication, de copier son lien, ou de 
 client/src/permalink.ts
 client/src/post-card.tsx
 client/src/grid.tsx
+client/src/profile-scroll.ts
 client/src/app-invite.ts
 client/src/open-app-banner.tsx
 client/src/app/publication/[id].tsx

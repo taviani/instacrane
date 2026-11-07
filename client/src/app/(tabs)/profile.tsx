@@ -5,6 +5,7 @@ import { api } from '../../api';
 import { GearIcon } from '../../icons';
 import { ProfileViewBar, ProfileViewBody, type ProfileView } from '../../profile-posts';
 import { ProfileHead } from '../../profile-head';
+import { useProfileScrollMemory } from '../../profile-scroll';
 import { useSession } from '../../session';
 import type { Profile } from '../../types';
 import { colors } from '../../ui';
@@ -15,6 +16,7 @@ export default function ProfileScreen() {
   const navigation = useNavigation();
   const [card, setCard] = useState<Profile | null>(null);
   const [view, setView] = useState<ProfileView>('grid');
+  const scroll = useProfileScrollMemory(me?.username ? `profile:${me.username}` : 'profile', view, setView);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -43,7 +45,14 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ScrollView stickyHeaderIndices={[1]} style={{ flex: 1, backgroundColor: colors.bg }}>
+    <ScrollView
+      ref={scroll.ref}
+      stickyHeaderIndices={[1]}
+      style={{ flex: 1, backgroundColor: colors.bg }}
+      onScroll={scroll.onScroll}
+      onContentSizeChange={scroll.onContentSizeChange}
+      scrollEventThrottle={scroll.scrollEventThrottle}
+    >
       <View style={{ padding: 16 }}>
         <ProfileHead card={card} />
       </View>
