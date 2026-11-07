@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { Keyboard, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ApiError, api, message } from '../../api';
@@ -18,8 +18,20 @@ export default function CommentsScreen() {
   const [missing, setMissing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [body, setBody] = useState('');
-  // Hauteur de la barre de navigation (hors safe area) pour le décalage iOS.
-  const keyboardOffset = Platform.OS === 'ios' ? insets.top + 44 : 0;
+  const [keyboard, setKeyboard] = useState(0);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const show = Keyboard.addListener(showEvent, (event) => {
+      setKeyboard(event.endCoordinates.height);
+    });
+    const hide = Keyboard.addListener(hideEvent, () => setKeyboard(0));
+    return () => {
+      show.remove();
+      hide.remove();
+    };
+  }, []);
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -102,16 +114,16 @@ export default function CommentsScreen() {
   }
 
   const mine = me?.username === post.author.username;
+  // iOS : padding = hauteur du clavier pour coller le composer dessus. Android redimensionne déjà la fenêtre.
+  const composerPad = Platform.OS === 'ios' && keyboard > 0 ? keyboard : Math.max(insets.bottom, 12);
+
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: colors.bg }}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-      keyboardVerticalOffset={keyboardOffset}
-    >
+    <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScrollView
         style={{ flex: 1 }}
         contentContainerStyle={{ padding: 16, gap: 12, flexGrow: 1 }}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="interactive"
       >
         {comments.map((comment) => (
           <View key={comment.id} style={{ gap: 4 }}>
@@ -134,7 +146,7 @@ export default function CommentsScreen() {
         style={{
           paddingHorizontal: 16,
           paddingTop: 12,
-          paddingBottom: Math.max(insets.bottom, 12),
+          paddingBottom: composerPad,
           gap: 8,
           borderTopWidth: 1,
           borderTopColor: colors.line,
@@ -144,6 +156,6 @@ export default function CommentsScreen() {
         <Field value={body} onChangeText={setBody} placeholder="Commentaire" multiline autoCapitalize="sentences" />
         <Button label="Envoyer" onPress={() => void sendComment()} />
       </View>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
