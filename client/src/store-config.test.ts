@@ -10,6 +10,7 @@ test('les identifiants de store restent ceux du produit', () => {
   const app = JSON.parse(readFileSync(new URL('../app.json', import.meta.url), 'utf8')).expo;
   assert.equal(app.scheme, 'instacrane');
   assert.equal(app.ios.bundleIdentifier, 'app.instacrane');
+  assert.equal(app.ios.infoPlist.ITSAppUsesNonExemptEncryption, false);
   assert.equal(app.android.package, 'app.instacrane');
   assert.equal(app.owner, undefined);
   assert.equal(app.extra?.eas?.projectId, undefined);
@@ -69,6 +70,7 @@ test('la configuration chargée n’ajoute pas de compte', () => {
   const current = expo.expo ?? expo;
   assert.equal(current.scheme, 'instacrane');
   assert.equal(current.ios.bundleIdentifier, 'app.instacrane');
+  assert.equal(current.ios.infoPlist.ITSAppUsesNonExemptEncryption, false);
   assert.equal(current.android.package, 'app.instacrane');
   assert.equal(current.owner, undefined);
   assert.equal(current.extra?.eas?.projectId, undefined);

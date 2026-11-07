@@ -124,7 +124,7 @@ En local, `docker compose` lance Postgres et l’API. Postgres n’écoute que s
 
 Sur `main`, le déploiement lit `DEPLOY_SSH_KEY`, `DEPLOY_USER`, `DEPLOY_HOST`, `DEPLOY_PATH`. Aucune de ces valeurs n’est dans le dépôt.
 
-Un workflow manuel lance les builds téléphone. Il ne part ni à la poussée ni à la pull request. Deux cases : soumettre iOS vers TestFlight, soumettre Android vers la piste interne. Aucune case : build iOS seul, sans soumission. La case Android seule construit Android et le soumet, sans build iOS. Les deux cases construisent les deux et les soumettent. Android n’est pas construit sans sa soumission.
+Un workflow manuel lance les builds téléphone. Il ne part ni à la poussée ni à la pull request. Deux cases : soumettre iOS vers TestFlight, soumettre Android vers la piste interne. Aucune case : build iOS seul, sans soumission. La case Android seule construit Android et le soumet, sans build iOS. Les deux cases construisent les deux et les soumettent. Android n’est pas construit sans sa soumission. L’app iOS déclare qu’elle n’utilise pas de chiffrement soumis à contrôle : seulement HTTPS et les fonctions du système. Apple ne redemande pas l’algorithme à chaque build.
 
 Ce workflow lit `EXPO_TOKEN`, `EXPO_PUBLIC_API_URL`, `EXPO_PUBLIC_ISSUER_URL`, `EXPO_PROJECT_ID`. `EXPO_PUBLIC_CLIENT_ID` et `EXPO_OWNER` s’y ajoutent. `EXPO_ASC_APP_ID` est exigé quand la case iOS est cochée.
 
