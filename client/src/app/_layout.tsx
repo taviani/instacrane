@@ -6,6 +6,7 @@ import { StatusBar } from 'expo-status-bar';
 import * as WebBrowser from 'expo-web-browser';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { ZoomSurface } from '../images';
+import { OpenAppBanner } from '../open-app-banner';
 import { destinationAfterSession } from '../permalink';
 import { SessionProvider, useSession } from '../session';
 import { clearResume, readResume, writeResume } from '../vault';
@@ -66,6 +67,7 @@ function Gate() {
   // Toujours monter le Stack : sinon l’URL initiale (deep link) est perdue pendant le chargement.
   return (
     <View style={{ flex: 1 }}>
+      <OpenAppBanner />
       <Stack
         screenOptions={{
           headerTintColor: '#111',

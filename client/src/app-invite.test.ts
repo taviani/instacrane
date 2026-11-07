@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { inviteDismissKey, isMobileBrowser, storeUrlFor } from './app-invite';
+import { appLinkForPath, isMobileBrowser, storeUrlFor } from './app-invite';
+
+const id = '11111111-1111-4111-8111-111111111111';
 
 test('un navigateur de téléphone est reconnu', () => {
   assert.equal(isMobileBrowser('Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)'), true);
@@ -26,6 +28,9 @@ test('le store suit le système du navigateur', () => {
   assert.equal(storeUrlFor('Mozilla/5.0 (iPhone)', { ios: '', android: 'https://play.example/android' }), null);
 });
 
-test('la clé d’oubli de la proposition est stable', () => {
-  assert.equal(inviteDismissKey('abc'), 'instacrane.invite.abc');
+test('le lien natif reprend la page courante', () => {
+  assert.equal(appLinkForPath(`/publication/${id}`), `instacrane://publication/${id}`);
+  assert.equal(appLinkForPath('/user/alice'), 'instacrane://user/alice');
+  assert.equal(appLinkForPath('/'), 'instacrane://');
+  assert.equal(appLinkForPath('/index'), 'instacrane://');
 });

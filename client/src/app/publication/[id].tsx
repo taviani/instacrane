@@ -4,7 +4,6 @@ import { useLocalSearchParams, useNavigation, useRouter } from 'expo-router';
 import { ApiError, api, message } from '../../api';
 import { dropPost } from '../../cache';
 import { BackIcon } from '../../icons';
-import { OpenAppBanner } from '../../open-app-banner';
 import { PostCard } from '../../post-card';
 import type { Post } from '../../types';
 import { ErrorText, Muted, colors } from '../../ui';
@@ -58,7 +57,6 @@ export default function PublicationScreen() {
 
   return (
     <ScrollView style={{ flex: 1, backgroundColor: colors.bg }} contentContainerStyle={{ paddingTop: 8 }}>
-      {id ? <OpenAppBanner id={id} /> : null}
       {missing ? (
         <View style={{ padding: 16 }}>
           <Muted>Publication introuvable.</Muted>
