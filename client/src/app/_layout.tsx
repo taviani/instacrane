@@ -1,6 +1,6 @@
 import 'react-native-gesture-handler';
 import { useEffect } from 'react';
-import { ActivityIndicator, View, Platform } from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 import { DefaultTheme, Stack, ThemeProvider, usePathname, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as WebBrowser from 'expo-web-browser';
@@ -63,47 +63,61 @@ function Gate() {
     };
   }, [ready, offline, token, me, segments, pathname, router]);
 
-  if (!ready) {
-    return (
-      <Screen>
-        <ActivityIndicator />
-      </Screen>
-    );
-  }
-  if (offline && token && !me) {
-    return (
-      <Screen>
-        <Title>Réseau indisponible</Title>
-        <ErrorText>La session reste ouverte.</ErrorText>
-        <Button label="Réessayer" onPress={() => void refreshMe()} />
-      </Screen>
-    );
-  }
+  // Toujours monter le Stack : sinon l’URL initiale (deep link) est perdue pendant le chargement.
   return (
-    <Stack
-      screenOptions={{
-        headerTintColor: '#111',
-        headerShadowVisible: false,
-        headerStyle: { backgroundColor: colors.bg },
-        contentStyle: { backgroundColor: colors.bg },
-        headerBackButtonDisplayMode: 'minimal',
-      }}
-    >
-      <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="(tabs)" options={{ headerShown: false, title: '' }} />
-      <Stack.Screen name="login" options={{ headerShown: false }} />
-      <Stack.Screen name="redirect" options={{ headerShown: false }} />
-      <Stack.Screen name="username" options={{ title: 'Nom d’utilisateur', headerBackVisible: false }} />
-      <Stack.Screen name="publication/[id]" options={{ title: '', headerBackVisible: false }} />
-      <Stack.Screen name="post/[id]" options={{ title: 'Commentaires' }} />
-      <Stack.Screen name="likes/[id]" options={{ title: 'J’aime' }} />
-      <Stack.Screen name="settings" options={{ title: 'Réglages' }} />
-      <Stack.Screen name="edit-profile" options={{ title: 'Modifier le profil' }} />
-      <Stack.Screen name="user/[username]" options={{ title: 'Profil' }} />
-      <Stack.Screen name="followers/[username]" options={{ title: 'Abonnés' }} />
-      <Stack.Screen name="following/[username]" options={{ title: 'Abonnements' }} />
-      <Stack.Screen name="requests" options={{ title: 'Demandes reçues' }} />
-      <Stack.Screen name="data" options={{ title: 'Données' }} />
-    </Stack>
+    <View style={{ flex: 1 }}>
+      <Stack
+        screenOptions={{
+          headerTintColor: '#111',
+          headerShadowVisible: false,
+          headerStyle: { backgroundColor: colors.bg },
+          contentStyle: { backgroundColor: colors.bg },
+          headerBackButtonDisplayMode: 'minimal',
+        }}
+      >
+        <Stack.Screen name="index" options={{ headerShown: false }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false, title: '' }} />
+        <Stack.Screen name="login" options={{ headerShown: false }} />
+        <Stack.Screen name="redirect" options={{ headerShown: false }} />
+        <Stack.Screen name="username" options={{ title: 'Nom d’utilisateur', headerBackVisible: false }} />
+        <Stack.Screen name="publication/[id]" options={{ title: '', headerBackVisible: false }} />
+        <Stack.Screen name="post/[id]" options={{ title: 'Commentaires' }} />
+        <Stack.Screen name="likes/[id]" options={{ title: 'J’aime' }} />
+        <Stack.Screen name="settings" options={{ title: 'Réglages' }} />
+        <Stack.Screen name="edit-profile" options={{ title: 'Modifier le profil' }} />
+        <Stack.Screen name="user/[username]" options={{ title: 'Profil' }} />
+        <Stack.Screen name="followers/[username]" options={{ title: 'Abonnés' }} />
+        <Stack.Screen name="following/[username]" options={{ title: 'Abonnements' }} />
+        <Stack.Screen name="requests" options={{ title: 'Demandes reçues' }} />
+        <Stack.Screen name="data" options={{ title: 'Données' }} />
+      </Stack>
+      {!ready ? (
+        <View style={styles.cover}>
+          <ActivityIndicator />
+        </View>
+      ) : null}
+      {ready && offline && token && !me ? (
+        <View style={styles.cover}>
+          <Screen>
+            <Title>Réseau indisponible</Title>
+            <ErrorText>La session reste ouverte.</ErrorText>
+            <Button label="Réessayer" onPress={() => void refreshMe()} />
+          </Screen>
+        </View>
+      ) : null}
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  cover: {
+    position: 'absolute',
+    top: 0,
+    right: 0,
+    bottom: 0,
+    left: 0,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: colors.bg,
+  },
+});
