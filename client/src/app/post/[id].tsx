@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { ApiError, api, message } from '../../api';
 import { dropPost } from '../../cache';
 import { useSession } from '../../session';
@@ -11,11 +12,14 @@ import { Button, ErrorText, Field, Muted, colors } from '../../ui';
 export default function CommentsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { me, reloadBell } = useSession();
+  const insets = useSafeAreaInsets();
   const [post, setPost] = useState<Post | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [missing, setMissing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [body, setBody] = useState('');
+  // Hauteur de la barre de navigation (hors safe area) pour le décalage iOS.
+  const keyboardOffset = Platform.OS === 'ios' ? insets.top + 44 : 0;
 
   const load = useCallback(async () => {
     if (!id) return;
@@ -99,8 +103,16 @@ export default function CommentsScreen() {
 
   const mine = me?.username === post.author.username;
   return (
-    <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <ScrollView contentContainerStyle={{ padding: 16, gap: 12 }}>
+    <KeyboardAvoidingView
+      style={{ flex: 1, backgroundColor: colors.bg }}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      keyboardVerticalOffset={keyboardOffset}
+    >
+      <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ padding: 16, gap: 12, flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+      >
         {comments.map((comment) => (
           <View key={comment.id} style={{ gap: 4 }}>
             <Text>
@@ -118,10 +130,20 @@ export default function CommentsScreen() {
         {comments.length < post.comments_count ? <Button label="Commentaires suivants" onPress={() => void moreComments()} /> : null}
         <ErrorText>{error}</ErrorText>
       </ScrollView>
-      <View style={{ padding: 16, gap: 8, borderTopWidth: 1, borderTopColor: colors.line }}>
-        <Field value={body} onChangeText={setBody} placeholder="Commentaire" />
+      <View
+        style={{
+          paddingHorizontal: 16,
+          paddingTop: 12,
+          paddingBottom: Math.max(insets.bottom, 12),
+          gap: 8,
+          borderTopWidth: 1,
+          borderTopColor: colors.line,
+          backgroundColor: colors.bg,
+        }}
+      >
+        <Field value={body} onChangeText={setBody} placeholder="Commentaire" multiline autoCapitalize="sentences" />
         <Button label="Envoyer" onPress={() => void sendComment()} />
       </View>
-    </View>
+    </KeyboardAvoidingView>
   );
 }

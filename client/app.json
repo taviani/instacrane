@@ -16,6 +16,7 @@
     },
     "android": {
       "package": "app.instacrane",
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "backgroundColor": "#ffffff",
         "foregroundImage": "./assets/android-icon-foreground.png",
