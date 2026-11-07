@@ -1,13 +1,16 @@
 import 'react-native-gesture-handler';
 import { useEffect } from 'react';
 import { ActivityIndicator, View, Platform } from 'react-native';
-import { DefaultTheme, Stack, ThemeProvider, useRouter, useSegments } from 'expo-router';
+import { DefaultTheme, Stack, ThemeProvider, usePathname, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as WebBrowser from 'expo-web-browser';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { routeAfterSession } from '../login-return';
+import { ZoomSurface } from '../images';
+import { destinationAfterSession } from '../permalink';
 import { SessionProvider, useSession } from '../session';
+import { clearResume, readResume, writeResume } from '../vault';
 import { Button, ErrorText, Screen, Title, colors } from '../ui';
+import { ZoomProvider } from '../zoom';
 
 WebBrowser.maybeCompleteAuthSession();
 
@@ -21,16 +24,19 @@ const theme = {
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1, backgroundColor: colors.bg }}>
-      <ThemeProvider value={theme}>
-        <SessionProvider>
-          <StatusBar style="dark" />
-          <View style={[{ flex: 1, backgroundColor: colors.bg, alignItems: 'center' }, webFrame]}>
-            <View style={[{ flex: 1, width: '100%', maxWidth: 480, backgroundColor: colors.bg }, webFrame]}>
-              <Gate />
+      <ZoomProvider>
+        <ThemeProvider value={theme}>
+          <SessionProvider>
+            <StatusBar style="dark" />
+            <View style={[{ flex: 1, backgroundColor: colors.bg, alignItems: 'center' }, webFrame]}>
+              <View style={[{ flex: 1, width: '100%', maxWidth: 480, backgroundColor: colors.bg }, webFrame]}>
+                <Gate />
+              </View>
             </View>
-          </View>
-        </SessionProvider>
-      </ThemeProvider>
+          </SessionProvider>
+        </ThemeProvider>
+        <ZoomSurface />
+      </ZoomProvider>
     </GestureHandlerRootView>
   );
 }
@@ -38,13 +44,24 @@ export default function RootLayout() {
 function Gate() {
   const { ready, token, me, offline, refreshMe } = useSession();
   const segments = useSegments();
+  const pathname = usePathname();
   const router = useRouter();
 
   useEffect(() => {
     if (!ready || offline) return;
-    const next = routeAfterSession(segments[0], Boolean(token), Boolean(me?.username));
-    if (next) router.replace(next);
-  }, [ready, offline, token, me, segments, router]);
+    let cancel = false;
+    void (async () => {
+      const saved = await readResume();
+      if (cancel) return;
+      const plan = destinationAfterSession(segments[0], Boolean(token), Boolean(me?.username), pathname, saved);
+      if (plan.save && plan.save !== saved) await writeResume(plan.save);
+      else if (plan.clear && saved) await clearResume();
+      if (!cancel && plan.go) router.replace(plan.go);
+    })();
+    return () => {
+      cancel = true;
+    };
+  }, [ready, offline, token, me, segments, pathname, router]);
 
   if (!ready) {
     return (
@@ -69,13 +86,15 @@ function Gate() {
         headerShadowVisible: false,
         headerStyle: { backgroundColor: colors.bg },
         contentStyle: { backgroundColor: colors.bg },
+        headerBackButtonDisplayMode: 'minimal',
       }}
     >
       <Stack.Screen name="index" options={{ headerShown: false }} />
-      <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+      <Stack.Screen name="(tabs)" options={{ headerShown: false, title: '' }} />
       <Stack.Screen name="login" options={{ headerShown: false }} />
       <Stack.Screen name="redirect" options={{ headerShown: false }} />
       <Stack.Screen name="username" options={{ title: 'Nom d’utilisateur', headerBackVisible: false }} />
+      <Stack.Screen name="publication/[id]" options={{ title: '', headerBackVisible: false }} />
       <Stack.Screen name="post/[id]" options={{ title: 'Commentaires' }} />
       <Stack.Screen name="likes/[id]" options={{ title: 'J’aime' }} />
       <Stack.Screen name="settings" options={{ title: 'Réglages' }} />

@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
-import { ScrollView, View, type StyleProp, type ImageStyle } from 'react-native';
+import { Platform, ScrollView, View, useWindowDimensions, type StyleProp, type ImageStyle } from 'react-native';
 import { Image } from 'expo-image';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { runOnJS, useAnimatedStyle, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { runOnJS, useAnimatedStyle, useSharedValue } from 'react-native-reanimated';
 import { cachedUri, dropKey, storeImage } from './cache';
 import { HeartIcon } from './icons';
 import { StackMark, colors } from './ui';
+import { useZoom, type ZoomPhoto } from './zoom';
 
 export function CachedImage({
   name,
@@ -87,7 +88,7 @@ export function PhotoPager({
         style={{ width: width || '100%' }}
       >
         {photos.map((photo) => (
-          <Zoomable key={photo.key} width={width} onLike={liked}>
+          <Zoomable key={photo.key} photo={photo} onLike={liked}>
             <CachedImage name={photo.key} url={photo.url} renew={photo.renew} style={{ width: width || '100%', aspectRatio: 4 / 5 }} />
           </Zoomable>
         ))}
@@ -102,14 +103,20 @@ export function PhotoPager({
   );
 }
 
-function Zoomable({ children, onLike }: { children: ReactNode; width: number; onLike: () => void }) {
-  const scale = useSharedValue(1);
+function Zoomable({ children, photo, onLike }: { children: ReactNode; photo: ZoomPhoto; onLike: () => void }) {
+  const zoom = useZoom();
+  const scale = zoom.scale;
+  const begin = zoom.begin;
+  const end = zoom.end;
   const pinch = Gesture.Pinch()
+    .onStart(() => {
+      runOnJS(begin)({ key: photo.key, url: photo.url });
+    })
     .onUpdate((event) => {
       scale.value = Math.min(4, Math.max(1, event.scale));
     })
     .onEnd(() => {
-      scale.value = withTiming(1);
+      runOnJS(end)();
     });
   const tap = Gesture.Tap()
     .numberOfTaps(2)
@@ -117,10 +124,76 @@ function Zoomable({ children, onLike }: { children: ReactNode; width: number; on
     .onEnd(() => {
       runOnJS(onLike)();
     });
-  const style = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }));
   return (
     <GestureDetector gesture={Gesture.Simultaneous(Gesture.Native(), pinch, tap)}>
-      <Animated.View style={style}>{children}</Animated.View>
+      <Animated.View>{children}</Animated.View>
     </GestureDetector>
+  );
+}
+
+export function ZoomSurface() {
+  const zoom = useZoom();
+  const { width, height } = useWindowDimensions();
+  const scale = zoom.scale;
+  const tx = zoom.tx;
+  const ty = zoom.ty;
+  const close = zoom.close;
+  const origin = useSharedValue(1);
+  const panX = useSharedValue(0);
+  const panY = useSharedValue(0);
+  const frame = useAnimatedStyle(() => ({
+    transform: [{ translateX: tx.value }, { translateY: ty.value }, { scale: scale.value }],
+  }));
+  const pinch = Gesture.Pinch()
+    .onBegin(() => {
+      origin.value = scale.value;
+    })
+    .onUpdate((event) => {
+      scale.value = Math.min(4, Math.max(1, origin.value * event.scale));
+    })
+    .onEnd(() => {
+      if (scale.value <= 1.05) runOnJS(close)();
+    });
+  const pan = Gesture.Pan()
+    .onBegin(() => {
+      panX.value = tx.value;
+      panY.value = ty.value;
+    })
+    .onUpdate((event) => {
+      if (scale.value <= 1) return;
+      tx.value = panX.value + event.translationX;
+      ty.value = panY.value + event.translationY;
+    });
+  const tap = Gesture.Tap().onEnd(() => {
+    runOnJS(close)();
+  });
+  if (!zoom.photo) return null;
+  return (
+    <View
+      pointerEvents={zoom.held ? 'none' : 'auto'}
+      style={{
+        position: Platform.OS === 'web' ? ('fixed' as 'absolute') : 'absolute',
+        top: 0,
+        right: 0,
+        bottom: 0,
+        left: 0,
+        zIndex: 40,
+        backgroundColor: colors.bg,
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <GestureDetector gesture={Gesture.Exclusive(Gesture.Simultaneous(pinch, pan), tap)}>
+        <Animated.View style={[{ width, height }, frame]}>
+          <CachedImage
+            name={zoom.photo.key}
+            url={zoom.photo.url}
+            renew={zoom.photo.renew}
+            contentFit="contain"
+            style={{ width, height }}
+          />
+        </Animated.View>
+      </GestureDetector>
+    </View>
   );
 }

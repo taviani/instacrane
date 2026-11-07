@@ -2,6 +2,14 @@ import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 type IconProps = { color?: string; size?: number };
 
+export function BackIcon({ color = '#111111', size = 26 }: IconProps) {
+  return (
+    <Svg width={size} height={size} viewBox="0 0 24 24">
+      <Path d="M15 5 8 12l7 7" fill="none" stroke={color} strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" />
+    </Svg>
+  );
+}
+
 export function SearchIcon({ color = '#111111', size = 26 }: IconProps) {
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24">

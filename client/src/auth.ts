@@ -9,7 +9,9 @@ import {
   type TokenResponse,
 } from 'expo-auth-session';
 import { Platform } from 'react-native';
+import * as WebBrowser from 'expo-web-browser';
 import { config } from './config';
+import { issuerLogoutURL } from './issuer-logout';
 import { finishIssuerLogin, savePendingLogin, withoutAuthQuery, type PendingLogin } from './login-return';
 import { clearSession, emit, readSession, writeSession, type StoredSession } from './vault';
 
@@ -27,12 +29,18 @@ let preparing: Promise<void> | null = null;
 
 const loginErrorKey = 'instacrane.login-error';
 
+/**
+ * Exact match against the issuer allowlist. Native URI is fixed — do not rebuild
+ * via makeRedirectUri (Expo Go / some clients emit instacrane:///… or exp://…).
+ */
 function redirectUri(): string {
-  return makeRedirectUri({
-    scheme: 'instacrane',
-    path: 'redirect',
-    native: 'instacrane://redirect',
-  });
+  if (Platform.OS === 'web') {
+    return makeRedirectUri({
+      scheme: 'instacrane',
+      path: 'redirect',
+    });
+  }
+  return 'instacrane://redirect';
 }
 
 export function prepareLogin(): Promise<void> {
@@ -107,6 +115,22 @@ export async function completeWebLogin(): Promise<'ok' | 'failed' | 'none'> {
   );
   emit();
   return 'ok';
+}
+
+export async function endIssuerSession(): Promise<void> {
+  const settings = config();
+  const back = redirectUri();
+  const url = issuerLogoutURL(settings.issuerUrl, settings.clientId, back);
+  if (!url) return;
+  if (Platform.OS === 'web') {
+    window.location.assign(url);
+    return;
+  }
+  try {
+    await WebBrowser.openAuthSessionAsync(url, back);
+  } catch {
+    // The local tokens are already gone.
+  }
 }
 
 export async function login(): Promise<boolean> {

@@ -1,33 +1,39 @@
 import { useState } from 'react';
-import { Pressable, Text, View } from 'react-native';
+import { Platform, Pressable, Share, Text, View } from 'react-native';
+import * as Clipboard from 'expo-clipboard';
+import * as Linking from 'expo-linking';
 import * as Location from 'expo-location';
 import { useRouter } from 'expo-router';
 import { ApiError, api, message } from './api';
 import { dropPost, photoKey } from './cache';
 import { BubbleIcon, HeartIcon } from './icons';
 import { PhotoPager } from './images';
+import { publicationPath } from './permalink';
 import { photoPlaceFor } from './publish-draft';
 import { useSession } from './session';
 import { ago, placeText, runes } from './text';
 import type { Post } from './types';
-import { Button, ConfirmDialog, ErrorText, Field, Muted, colors } from './ui';
+import { Button, ChoiceDialog, ConfirmDialog, ErrorText, Field, Muted, colors } from './ui';
 
 export function PostCard({
   post,
   onChange,
   onGone,
+  here,
 }: {
   post: Post;
   onChange: (post: Post) => void;
   onGone: () => void;
+  here?: boolean;
 }) {
   const router = useRouter();
   const { me, reloadBell } = useSession();
+  const [menu, setMenu] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [ask, setAsk] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [captionOpen, setCaptionOpen] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
   const [caption, setCaption] = useState(post.caption ?? '');
-  const [placeOpen, setPlaceOpen] = useState(false);
   const mine = me?.username === post.author.username;
 
   async function likeOnly() {
@@ -61,7 +67,7 @@ export function PostCard({
       setError('légende invalide');
       return;
     }
-    if (await save({ caption: caption.trim() })) setCaptionOpen(false);
+    if (await save({ caption: caption.trim() })) setEditing(false);
   }
 
   async function saveHere() {
@@ -71,7 +77,7 @@ export function PostCard({
       return;
     }
     const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-    if (await save({ latitude: current.coords.latitude, longitude: current.coords.longitude })) setPlaceOpen(false);
+    if (await save({ latitude: current.coords.latitude, longitude: current.coords.longitude })) setEditing(false);
   }
 
   async function savePhotoPlace() {
@@ -80,11 +86,11 @@ export function PostCard({
       setError('Cette photo n’a pas de position.');
       return;
     }
-    if (await save(place)) setPlaceOpen(false);
+    if (await save(place)) setEditing(false);
   }
 
   async function clearPlace() {
-    if (await save({ latitude: null, longitude: null })) setPlaceOpen(false);
+    if (await save({ latitude: null, longitude: null })) setEditing(false);
   }
 
   async function save(body: { caption?: string; latitude?: number | null; longitude?: number | null }): Promise<boolean> {
@@ -96,6 +102,40 @@ export function PostCard({
     } catch (cause) {
       setError(message(cause));
       return false;
+    }
+  }
+
+  function openMenu() {
+    setNotice(null);
+    setMenu(true);
+  }
+
+  async function copyLink() {
+    const url = linkFor(post.id);
+    setMenu(false);
+    if (!url) {
+      setError('Lien indisponible.');
+      return;
+    }
+    try {
+      await Clipboard.setStringAsync(url);
+      setNotice('Lien copié.');
+    } catch {
+      setError('Copie indisponible.');
+    }
+  }
+
+  async function shareLink() {
+    const url = linkFor(post.id);
+    setMenu(false);
+    if (!url) {
+      setError('Lien indisponible.');
+      return;
+    }
+    try {
+      await Share.share(Platform.OS === 'ios' ? { url } : { message: url });
+    } catch {
+      setError('Partage indisponible.');
     }
   }
 
@@ -120,7 +160,7 @@ export function PostCard({
         <Pressable accessibilityRole="link" onPress={() => router.push(`/user/${post.author.username}`)}>
           <Text style={{ fontWeight: '700' }}>{post.author.username}</Text>
         </Pressable>
-        <Pressable accessibilityRole="button" accessibilityLabel="Plus" onPress={() => setAsk(true)} hitSlop={8}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Plus" onPress={openMenu} hitSlop={8}>
           <Text style={{ fontSize: 22, letterSpacing: 1 }}>···</Text>
         </Pressable>
       </View>
@@ -158,30 +198,6 @@ export function PostCard({
             {post.caption}
           </Text>
         ) : null}
-        {mine && !captionOpen ? (
-          <Pressable onPress={() => { setCaption(post.caption ?? ''); setCaptionOpen(true); }}>
-            <Muted>{post.caption ? 'Modifier la légende' : 'Ajouter une légende'}</Muted>
-          </Pressable>
-        ) : null}
-        {mine && captionOpen ? (
-          <View style={{ gap: 8 }}>
-            <Field value={caption} onChangeText={setCaption} placeholder="Légende" multiline />
-            <Button label="Enregistrer la légende" onPress={() => void saveCaption()} />
-          </View>
-        ) : null}
-        {mine && !placeOpen ? (
-          <Pressable onPress={() => setPlaceOpen(true)}>
-            <Muted>{post.latitude != null ? 'Modifier la position' : 'Ajouter une position'}</Muted>
-          </Pressable>
-        ) : null}
-        {mine && placeOpen ? (
-          <View style={{ gap: 8 }}>
-            <Muted>Une seule source. L’autre est oubliée.</Muted>
-            <Button label="Position du moment" onPress={() => void saveHere()} />
-            <Button label="Position de la photo" onPress={() => void savePhotoPlace()} />
-            {post.latitude != null ? <Button label="Retirer la position" onPress={() => void clearPlace()} /> : null}
-          </View>
-        ) : null}
         {post.preview_username && post.preview_body ? (
           <Text>
             <Text style={{ fontWeight: '700' }}>{post.preview_username} </Text>
@@ -190,8 +206,71 @@ export function PostCard({
         ) : null}
         {post.latitude != null && post.longitude != null ? <Muted>{placeText(post.latitude, post.longitude)}</Muted> : null}
         <Muted>{ago(post.created_at)}</Muted>
+        {notice ? <Muted>{notice}</Muted> : null}
         <ErrorText>{error}</ErrorText>
       </View>
+      <ChoiceDialog
+        visible={menu}
+        choices={[
+          ...(!here
+            ? [
+                {
+                  label: 'Accéder à cette publication',
+                  onPress: () => {
+                    setMenu(false);
+                    router.push(`/publication/${post.id}`);
+                  },
+                },
+              ]
+            : []),
+          { label: 'Copier le lien', onPress: () => void copyLink() },
+          { label: 'Partager sur…', onPress: () => void shareLink() },
+          ...(mine
+            ? [
+                {
+                  label: 'Modifier',
+                  onPress: () => {
+                    setCaption(post.caption ?? '');
+                    setError(null);
+                    setMenu(false);
+                    setEditing(true);
+                  },
+                },
+                {
+                  label: 'Supprimer',
+                  danger: true,
+                  onPress: () => {
+                    setMenu(false);
+                    setAsk(true);
+                  },
+                },
+              ]
+            : [
+                {
+                  label: 'Signaler',
+                  onPress: () => {
+                    setMenu(false);
+                    setAsk(true);
+                  },
+                },
+              ]),
+        ]}
+        onCancel={() => setMenu(false)}
+      />
+      <ChoiceDialog
+        visible={editing}
+        onCancel={() => setEditing(false)}
+        choices={[
+          { label: 'Enregistrer la légende', onPress: () => void saveCaption() },
+          { label: 'Position du moment', onPress: () => void saveHere() },
+          { label: 'Position de la photo', onPress: () => void savePhotoPlace() },
+          ...(post.latitude != null ? [{ label: 'Retirer la position', onPress: () => void clearPlace(), danger: true }] : []),
+        ]}
+      >
+        <Field value={caption} onChangeText={setCaption} placeholder="Légende" multiline autoCapitalize="sentences" />
+        <Muted>Une seule source. L’autre est oubliée.</Muted>
+        <ErrorText>{error}</ErrorText>
+      </ChoiceDialog>
       <ConfirmDialog
         visible={ask}
         message={mine ? 'Effacer la publication ?' : 'Signaler la publication ?'}
@@ -205,6 +284,12 @@ export function PostCard({
       />
     </View>
   );
+}
+
+function linkFor(id: string): string | null {
+  const path = publicationPath(id);
+  if (!path) return null;
+  return Linking.createURL(path) || null;
 }
 
 async function renewPhoto(id: string, position: number): Promise<string | null> {

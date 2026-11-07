@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useState, type ReactNode } from '
 import { useRouter } from 'expo-router';
 import { AppState } from 'react-native';
 import { ApiError, api } from './api';
-import { completeWebLogin, login as beginLogin, refreshSession } from './auth';
+import { completeWebLogin, endIssuerSession, login as beginLogin, refreshSession } from './auth';
 import type { Note, Owner } from './types';
 import { clearSession, emit, hydrate, readSession, setAlertsAccepted, subscribe } from './vault';
 
@@ -101,6 +101,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     await setAlertsAccepted(false);
     await clearSession();
     emit();
+    await endIssuerSession();
   }
 
   return (

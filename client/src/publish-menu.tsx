@@ -1,61 +1,53 @@
-import { useState } from 'react';
-import { Image, Modal, Platform, Pressable, Text, View } from 'react-native';
+import { ActionSheetIOS, Alert, Image, Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import type { ImagePickerAsset } from 'expo-image-picker';
 import { message } from './api';
 import { preparePhoto, type Draft } from './prepare';
-import { ErrorText, colors } from './ui';
 
-export function PublishMenu({
-  visible,
-  onClose,
-  onPicked,
-}: {
-  visible: boolean;
-  onClose: () => void;
-  onPicked: (photos: Draft[]) => void;
-}) {
-  const [error, setError] = useState<string | null>(null);
-
-  async function choose(kind: 'library' | 'camera' | 'file') {
-    setError(null);
-    try {
-      const assets = await pick(kind);
-      if (!assets || assets.length === 0) return;
-      const photos = await Promise.all(assets.slice(0, 20).map((asset) => preparePhoto(asset)));
-      onClose();
-      onPicked(photos);
-    } catch (cause) {
-      setError(message(cause));
-    }
+export function openPublishPicker(onPicked: (photos: Draft[]) => void): void {
+  if (Platform.OS === 'ios') {
+    const kinds = ['library', 'camera', 'file'] as const;
+    ActionSheetIOS.showActionSheetWithOptions(
+      {
+        options: ['Photothèque', 'Caméra', 'Fichier', 'Annuler'],
+        cancelButtonIndex: 3,
+        userInterfaceStyle: 'light',
+      },
+      (index) => {
+        const kind = kinds[index];
+        if (kind) void take(kind, onPicked);
+      },
+    );
+    return;
   }
-
-  return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
-      <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.35)' }}>
-        <Pressable accessibilityRole="button" accessibilityLabel="Annuler" onPress={onClose} style={{ flex: 1 }} />
-        <View style={{ backgroundColor: colors.bg, padding: 8, gap: 8 }}>
-          <Choice label="Photothèque" onPress={() => void choose('library')} />
-          <Choice label="Caméra" onPress={() => void choose('camera')} />
-          <Choice label="Fichier" onPress={() => void choose('file')} />
-          <Choice label="Annuler" onPress={onClose} />
-          <ErrorText>{error}</ErrorText>
-        </View>
-      </View>
-    </Modal>
-  );
+  if (Platform.OS === 'web') {
+    void webFiles()
+      .then((assets) => deliver(assets, onPicked))
+      .catch((cause) => Alert.alert('Instacrane', message(cause)));
+    return;
+  }
+  void take('library', onPicked);
 }
 
-function Choice({ label, onPress }: { label: string; onPress: () => void }) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      onPress={onPress}
-      style={{ paddingVertical: 14, alignItems: 'center', borderTopWidth: label === 'Photothèque' ? 0 : 1, borderTopColor: colors.line }}
-    >
-      <Text style={{ fontSize: 17 }}>{label}</Text>
-    </Pressable>
-  );
+async function deliver(assets: ImagePickerAsset[] | null, onPicked: (photos: Draft[]) => void) {
+  if (!assets || assets.length === 0) return;
+  const photos = await Promise.all(assets.slice(0, 20).map((asset) => preparePhoto(asset)));
+  if (photos.length > 0) onPicked(photos);
+}
+
+async function take(kind: 'library' | 'camera' | 'file', onPicked: (photos: Draft[]) => void) {
+  try {
+    const photos = await taken(kind);
+    if (photos) onPicked(photos);
+  } catch (cause) {
+    Alert.alert('Instacrane', message(cause));
+  }
+}
+
+async function taken(kind: 'library' | 'camera' | 'file'): Promise<Draft[] | null> {
+  const assets = await pick(kind);
+  if (!assets || assets.length === 0) return null;
+  return Promise.all(assets.slice(0, 20).map((asset) => preparePhoto(asset)));
 }
 
 async function pick(kind: 'library' | 'camera' | 'file'): Promise<ImagePickerAsset[] | null> {
@@ -108,7 +100,7 @@ function webFiles(): Promise<ImagePickerAsset[] | null> {
         resolve(null);
         return;
       }
-      void Promise.all(list.map(fileAsset)).then(resolve);
+      void Promise.all(list.map(fileAsset)).then(resolve, reject);
     };
     input.onchange = () => finish(input.files);
     input.addEventListener('cancel', () => finish(null));

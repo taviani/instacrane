@@ -58,7 +58,7 @@ export default function SettingsScreen() {
       {Platform.OS === 'web' && alerts ? <Muted>Sur le web, accepter n’enregistre pas de jeton d’appareil.</Muted> : null}
       <Button label="Données" onPress={() => router.push('/data')} />
       <ErrorText>{error}</ErrorText>
-      <ConfirmButton label="Quitter la session" confirmLabel="Quitter" onConfirm={logout} />
+      <ConfirmButton label="Se déconnecter" confirmLabel="Se déconnecter" onConfirm={logout} />
     </ScrollView>
   );
 }
